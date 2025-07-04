@@ -158,13 +158,6 @@ export function resetInitializedLanguages(): void {
 }
 
 /**
- * Check if a language has been successfully initialized
- */
-export function isLanguageInitialized(languageId: string): boolean {
-  return initializedLanguages.has(languageId);
-}
-
-/**
  * Ensure language servers are ready by searching for common symbols
  * This triggers language server initialization if needed
  */
@@ -238,6 +231,29 @@ async function ensureLanguageServersReady(): Promise<void> {
       return; // Language servers are ready
     }
   }
+}
+
+/**
+ * Find a symbol by name in a document's symbol tree
+ * Handles both simple names and qualified names (e.g., "ClassName.methodName")
+ */
+export function findSymbolByName(
+  symbols: vscode.DocumentSymbol[],
+  targetName: string
+): vscode.DocumentSymbol | undefined {
+  for (const symbol of symbols) {
+    // Direct match
+    if (symbol.name === targetName) {
+      return symbol;
+    }
+
+    // Check children recursively
+    if (symbol.children && symbol.children.length > 0) {
+      const found = findSymbolByName(symbol.children, targetName);
+      if (found) return found;
+    }
+  }
+  return undefined;
 }
 
 export async function findSymbolInWorkspace(

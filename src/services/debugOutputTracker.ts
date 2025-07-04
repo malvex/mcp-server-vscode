@@ -95,14 +95,6 @@ class DebugOutputTracker {
     return filtered;
   }
 
-  public getAllSessionIds(): string[] {
-    return Array.from(this.outputs.keys());
-  }
-
-  public clearSession(sessionId: string): void {
-    this.outputs.delete(sessionId);
-  }
-
   public dispose(): void {
     this.disposable?.dispose();
     this.outputs.clear();

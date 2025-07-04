@@ -28,7 +28,6 @@ import {
 import { refactor_renameTool } from './refactor';
 import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
-// import { executeCodeTool } from './executeCode';  // Commented out - redundant tool
 import { workspaceSymbolsTool } from './workspaceSymbols';
 
 export function getTools(): Tool[] {
@@ -62,7 +61,6 @@ export function getTools(): Tool[] {
     // Other tools
     callHierarchyTool,
     symbolSearchTool,
-    // executeCodeTool,  // Commented out - redundant tool
     workspaceSymbolsTool,
   ];
 }

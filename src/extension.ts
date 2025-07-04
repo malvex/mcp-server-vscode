@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
-import { MCPServer } from './mcp/server';
 import { HTTPBridge } from './mcp/http-bridge';
 import { debugOutputTracker } from './services/debugOutputTracker';
 
-let mcpServer: MCPServer | undefined;
 let httpBridge: HTTPBridge | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -61,8 +59,5 @@ export function deactivate() {
 
   if (httpBridge) {
     httpBridge.stop();
-  }
-  if (mcpServer) {
-    mcpServer.stop();
   }
 }

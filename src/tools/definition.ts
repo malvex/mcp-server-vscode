@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
-import { searchWorkspaceSymbols, getDocumentSymbols } from './utils/symbolProvider';
+import {
+  searchWorkspaceSymbols,
+  getDocumentSymbols,
+  findSymbolByName,
+} from './utils/symbolProvider';
 
 export const definitionTool: Tool = {
   name: 'definition',
@@ -214,23 +218,4 @@ async function findDefinitionBySymbol(
       };
     }
   }
-}
-
-// Helper function to find a symbol by name in document symbols
-function findSymbolByName(
-  symbols: vscode.DocumentSymbol[],
-  name: string
-): vscode.DocumentSymbol | undefined {
-  for (const symbol of symbols) {
-    if (symbol.name === name) {
-      return symbol;
-    }
-    if (symbol.children) {
-      const found = findSymbolByName(symbol.children, name);
-      if (found) {
-        return found;
-      }
-    }
-  }
-  return undefined;
 }
