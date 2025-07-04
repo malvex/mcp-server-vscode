@@ -2,26 +2,65 @@ import * as vscode from 'vscode';
 import { Tool } from './types';
 
 // Default code file extensions that support symbol extraction
+// Note: These must be individual patterns - VS Code glob doesn't support nested braces
 const DEFAULT_CODE_PATTERNS = [
-  '**/*.{js,jsx,mjs,cjs}', // JavaScript
-  '**/*.{ts,tsx,mts,cts}', // TypeScript
-  '**/*.{py,pyw}', // Python
-  '**/*.{java}', // Java
-  '**/*.{c,cpp,cc,cxx,h,hpp}', // C/C++
-  '**/*.{cs,vb}', // .NET languages
-  '**/*.{go}', // Go
-  '**/*.{rs}', // Rust
-  '**/*.{rb}', // Ruby
-  '**/*.{php}', // PHP
-  '**/*.{swift,m,mm}', // Swift/Objective-C
-  '**/*.{kt,kts}', // Kotlin
-  '**/*.{scala}', // Scala
-  '**/*.{r,R}', // R
-  '**/*.{lua}', // Lua
-  '**/*.{dart}', // Dart
-  '**/*.{ex,exs}', // Elixir
-  '**/*.{clj,cljs}', // Clojure
-  '**/*.{jl}', // Julia
+  // JavaScript
+  '**/*.js',
+  '**/*.jsx',
+  '**/*.mjs',
+  '**/*.cjs',
+  // TypeScript
+  '**/*.ts',
+  '**/*.tsx',
+  '**/*.mts',
+  '**/*.cts',
+  // Python
+  '**/*.py',
+  '**/*.pyw',
+  // Java
+  '**/*.java',
+  // C/C++
+  '**/*.c',
+  '**/*.cpp',
+  '**/*.cc',
+  '**/*.cxx',
+  '**/*.h',
+  '**/*.hpp',
+  // .NET
+  '**/*.cs',
+  '**/*.vb',
+  // Go
+  '**/*.go',
+  // Rust
+  '**/*.rs',
+  // Ruby
+  '**/*.rb',
+  // PHP
+  '**/*.php',
+  // Swift/Objective-C
+  '**/*.swift',
+  '**/*.m',
+  '**/*.mm',
+  // Kotlin
+  '**/*.kt',
+  '**/*.kts',
+  // Scala
+  '**/*.scala',
+  // R
+  '**/*.r',
+  '**/*.R',
+  // Lua
+  '**/*.lua',
+  // Dart
+  '**/*.dart',
+  // Elixir
+  '**/*.ex',
+  '**/*.exs',
+  // Clojure
+  '**/*.clj',
+  '**/*.cljs',
+  // Julia
+  '**/*.jl',
 ];
 
 // Language IDs that should be skipped even if file matches pattern
@@ -84,9 +123,6 @@ export const workspaceSymbolsTool: Tool = {
       includeNonCodeFiles = false,
     } = args;
 
-    // If no file pattern specified, use default code patterns
-    const effectivePattern = filePattern || `{${DEFAULT_CODE_PATTERNS.join(',')}}`;
-
     try {
       // Get workspace folders to filter out external files
       const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -100,8 +136,30 @@ export const workspaceSymbolsTool: Tool = {
       const excludePattern =
         '{**/node_modules/**,**/.vscode/**,**/venv/**,**/.env/**,**/site-packages/**,**/__pycache__/**,**/.git/**}';
 
-      // Find all files matching the pattern
-      const files = await vscode.workspace.findFiles(effectivePattern, excludePattern, maxFiles);
+      let files: vscode.Uri[] = [];
+
+      if (filePattern) {
+        // Use user-provided pattern
+        files = await vscode.workspace.findFiles(filePattern, excludePattern, maxFiles);
+      } else {
+        // Use default code patterns - need to search each pattern separately
+        // since VS Code glob doesn't support nested braces
+        const remainingFiles = maxFiles;
+        const allFiles: vscode.Uri[] = [];
+
+        for (const pattern of DEFAULT_CODE_PATTERNS) {
+          if (allFiles.length >= maxFiles) break;
+
+          const patternFiles = await vscode.workspace.findFiles(
+            pattern,
+            excludePattern,
+            remainingFiles - allFiles.length
+          );
+          allFiles.push(...patternFiles);
+        }
+
+        files = allFiles.slice(0, maxFiles);
+      }
 
       const symbolsByFile: Record<string, any[]> = {};
       let totalSymbols = 0;
