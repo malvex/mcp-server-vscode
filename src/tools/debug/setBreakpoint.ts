@@ -4,7 +4,8 @@ import { findSymbolInWorkspace } from '../utils/symbolProvider';
 
 export const debug_setBreakpointTool: Tool = {
   name: 'debug_setBreakpoint',
-  description: 'Set a breakpoint by symbol name or file/line with optional conditions',
+  description:
+    'Set a breakpoint by symbol name or file/line with optional conditions. Debug smarter - set breakpoints instantly without clicking through files',
   inputSchema: {
     type: 'object',
     properties: {
@@ -20,7 +21,7 @@ export const debug_setBreakpointTool: Tool = {
       },
       line: {
         type: 'number',
-        description: 'Line number (0-based)',
+        description: 'Line number (1-based)',
       },
       // Optional conditions
       condition: {
@@ -92,7 +93,7 @@ export const debug_setBreakpointTool: Tool = {
           symbol: s.name,
           kind: vscode.SymbolKind[s.kind],
           file: vscode.workspace.asRelativePath(s.location.uri),
-          line: s.location.range.start.line, // 0-based
+          line: s.location.range.start.line + 1,
           container: s.containerName || '',
         }));
 
@@ -100,7 +101,7 @@ export const debug_setBreakpointTool: Tool = {
           return {
             multipleMatches: true,
             matchFormat: '[symbol, kind, file, line]',
-            matches: matches.map((m) => [m.symbol, m.kind, m.file, m.line]),
+            matches: matches.map((m) => [m.symbol, m.kind, m.file, m.line + 1]),
           };
         }
         return { multipleMatches: true, matches };
@@ -117,6 +118,9 @@ export const debug_setBreakpointTool: Tool = {
     }
     // Find location by file/line
     else if (file && line !== undefined) {
+      // Convert from 1-based (user input) to 0-based (VS Code)
+      targetLine = line - 1;
+
       // Find the file in workspace
       const files = await vscode.workspace.findFiles(`**/${file}`);
       if (files.length === 0) {
@@ -125,7 +129,7 @@ export const debug_setBreakpointTool: Tool = {
           : { error: `File '${file}' not found in workspace` };
       }
       targetUri = files[0];
-      targetLine = line; // Expect 0-based input
+      // targetLine already set above after conversion
     }
 
     // Create breakpoint
@@ -135,7 +139,7 @@ export const debug_setBreakpointTool: Tool = {
 
     const breakpointInfo = {
       file: vscode.workspace.asRelativePath(targetUri!),
-      line: targetLine!, // 0-based
+      line: targetLine! + 1, // Convert to 1-based for output
       enabled: true,
       condition,
       hitCondition,
@@ -147,7 +151,7 @@ export const debug_setBreakpointTool: Tool = {
     if (format === 'compact') {
       return {
         bpFormat: '[file, line, enabled]',
-        bp: [breakpointInfo.file, breakpointInfo.line, breakpointInfo.enabled],
+        bp: [breakpointInfo.file, breakpointInfo.line + 1, breakpointInfo.enabled],
       };
     }
     return { breakpoint: breakpointInfo };

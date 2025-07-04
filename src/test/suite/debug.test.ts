@@ -63,7 +63,7 @@ suite('Debug Tools Tests', () => {
     // Check breakpoint structure
     const firstBp = result.breakpoints[0];
     assert.ok(firstBp.file.endsWith('app.ts'), 'Should include file name');
-    assert.strictEqual(firstBp.line, 4, 'Should have correct line number (0-based)');
+    assert.strictEqual(firstBp.line, 5, 'Should have correct line number (1-based)');
   });
 
   test('should clear all breakpoints', async () => {

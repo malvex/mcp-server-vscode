@@ -4,7 +4,8 @@ import { searchWorkspaceSymbols, getDocumentSymbols } from './utils/symbolProvid
 
 export const referencesTool: Tool = {
   name: 'references',
-  description: 'Find all references to a symbol by name',
+  description:
+    'Find all references to a symbol by name. Superior to grep - finds semantic references including imports, type usage, and renamed variables',
   inputSchema: {
     type: 'object',
     properties: {
@@ -146,19 +147,19 @@ async function findReferencesBySymbol(
             if (format === 'compact') {
               allReferences.push([
                 relativePath,
-                ref.range.start.line,
+                ref.range.start.line + 1,
                 ref.range.start.character,
-                ref.range.end.line,
+                ref.range.end.line + 1,
                 ref.range.end.character,
               ]);
             } else {
               allReferences.push({
                 uri: ref.uri.toString(),
                 file: relativePath,
-                line: ref.range.start.line,
+                line: ref.range.start.line + 1,
                 range: {
-                  start: { line: ref.range.start.line, character: ref.range.start.character },
-                  end: { line: ref.range.end.line, character: ref.range.end.character },
+                  start: { line: ref.range.start.line + 1, character: ref.range.start.character },
+                  end: { line: ref.range.end.line + 1, character: ref.range.end.character },
                 },
               });
             }

@@ -40,7 +40,8 @@ function findSimilarNames(target: string, symbols: string[], maxDistance: number
 
 export const refactor_renameTool: Tool = {
   name: 'refactor_rename',
-  description: 'Rename a symbol across all files in the workspace',
+  description:
+    'Rename a symbol across all files in the workspace. Refactor safely - automatically updates all references, imports, and type usages',
   inputSchema: {
     type: 'object',
     properties: {
@@ -137,7 +138,7 @@ export const refactor_renameTool: Tool = {
                 kind: vscode.SymbolKind[m.kind],
                 container: m.containerName || null,
                 file: vscode.workspace.asRelativePath(m.location.uri),
-                line: m.location.range.start.line,
+                line: m.location.range.start.line + 1,
               },
               match: i + 1,
               hint: m.containerName
@@ -182,9 +183,9 @@ export const refactor_renameTool: Tool = {
       const changes = editEntries.map(([uri, edits]) => ({
         file: vscode.workspace.asRelativePath(uri),
         edits: edits.map((edit) => ({
-          startLine: edit.range.start.line,
+          startLine: edit.range.start.line + 1,
           startChar: edit.range.start.character,
-          endLine: edit.range.end.line,
+          endLine: edit.range.end.line + 1,
           endChar: edit.range.end.character,
           newText: edit.newText,
         })),
@@ -224,7 +225,7 @@ export const refactor_renameTool: Tool = {
           kind: vscode.SymbolKind[match.kind],
           location: {
             file: vscode.workspace.asRelativePath(fileUri),
-            line: position.line,
+            line: position.line + 1,
             character: position.character,
           },
         },

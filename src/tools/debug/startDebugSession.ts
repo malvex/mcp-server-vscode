@@ -3,7 +3,8 @@ import { Tool } from '../types';
 
 export const debug_startSessionTool: Tool = {
   name: 'debug_startSession',
-  description: 'Start a debug session using a configuration from launch.json',
+  description:
+    'Start a debug session using a configuration from launch.json. Launch debugging instantly - no need to navigate to the debug panel',
   inputSchema: {
     type: 'object',
     properties: {

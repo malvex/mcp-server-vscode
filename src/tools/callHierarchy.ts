@@ -4,7 +4,8 @@ import { searchWorkspaceSymbols } from './utils/symbolProvider';
 
 export const callHierarchyTool: Tool = {
   name: 'callHierarchy',
-  description: 'Find what calls a function or what a function calls by using the function name',
+  description:
+    'Find what calls a function or what a function calls by using the function name. Perfect for understanding code flow and dependencies - faster than manually tracing through files',
   inputSchema: {
     type: 'object',
     properties: {
@@ -128,7 +129,7 @@ export const callHierarchyTool: Tool = {
                 sym.name,
                 vscode.SymbolKind[sym.kind].toLowerCase(),
                 sym.location.uri.fsPath,
-                sym.location.range.start.line,
+                sym.location.range.start.line + 1,
               ],
               calls: [],
             }
@@ -138,7 +139,7 @@ export const callHierarchyTool: Tool = {
                 kind: vscode.SymbolKind[sym.kind],
                 container: sym.containerName,
                 file: sym.location.uri.fsPath,
-                line: sym.location.range.start.line, // Keep 0-based for AI
+                line: sym.location.range.start.line + 1,
               },
               calls: [],
             };
@@ -156,8 +157,8 @@ export const callHierarchyTool: Tool = {
                 call.from.name,
                 vscode.SymbolKind[call.from.kind].toLowerCase(),
                 call.from.uri.fsPath,
-                call.from.range.start.line,
-                call.fromRanges.map((range) => [range.start.line, range.start.character]),
+                call.from.range.start.line + 1,
+                call.fromRanges.map((range) => [range.start.line + 1, range.start.character]),
               ])
             );
           } else {
@@ -168,10 +169,10 @@ export const callHierarchyTool: Tool = {
                   name: call.from.name,
                   kind: vscode.SymbolKind[call.from.kind],
                   file: call.from.uri.fsPath,
-                  line: call.from.range.start.line,
+                  line: call.from.range.start.line + 1,
                 },
                 locations: call.fromRanges.map((range) => ({
-                  line: range.start.line,
+                  line: range.start.line + 1,
                   character: range.start.character,
                   preview: getLinePreview(document, range.start.line),
                 })),
@@ -194,8 +195,8 @@ export const callHierarchyTool: Tool = {
                 call.to.name,
                 vscode.SymbolKind[call.to.kind].toLowerCase(),
                 call.to.uri.fsPath,
-                call.to.range.start.line,
-                call.fromRanges.map((range) => [range.start.line, range.start.character]),
+                call.to.range.start.line + 1,
+                call.fromRanges.map((range) => [range.start.line + 1, range.start.character]),
               ])
             );
           } else {
@@ -206,10 +207,10 @@ export const callHierarchyTool: Tool = {
                   name: call.to.name,
                   kind: vscode.SymbolKind[call.to.kind],
                   file: call.to.uri.fsPath,
-                  line: call.to.range.start.line,
+                  line: call.to.range.start.line + 1,
                 },
                 locations: call.fromRanges.map((range) => ({
-                  line: range.start.line,
+                  line: range.start.line + 1,
                   character: range.start.character,
                 })),
               }))

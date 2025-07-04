@@ -3,7 +3,8 @@ import { Tool } from '../types';
 
 export const debug_inspectVariablesTool: Tool = {
   name: 'debug_inspectVariables',
-  description: 'Inspect variables in the current scope (locals, globals, etc.) during debugging',
+  description:
+    'Inspect variables in the current scope (locals, globals, etc.) during debugging. See all variable values instantly - no more hovering over each one',
   inputSchema: {
     type: 'object',
     properties: {

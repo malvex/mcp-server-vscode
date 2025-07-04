@@ -4,7 +4,8 @@ import { searchWorkspaceSymbols, getDocumentSymbols } from './utils/symbolProvid
 
 export const definitionTool: Tool = {
   name: 'definition',
-  description: 'Find the definition of a symbol by name',
+  description:
+    'Find the definition of a symbol by name. More efficient than searching files - instantly jumps to where a function/class/variable is defined',
   inputSchema: {
     type: 'object',
     properties: {
@@ -83,13 +84,13 @@ async function findDefinitionBySymbol(
                     member.name,
                     vscode.SymbolKind[member.kind].toLowerCase(),
                     sym.location.uri.fsPath,
-                    member.range.start.line,
+                    member.range.start.line + 1,
                   ],
                   uri: sym.location.uri.toString(),
                   range: [
-                    member.range.start.line,
+                    member.range.start.line + 1,
                     member.range.start.character,
-                    member.range.end.line,
+                    member.range.end.line + 1,
                     member.range.end.character,
                   ],
                 });
@@ -100,16 +101,16 @@ async function findDefinitionBySymbol(
                     kind: vscode.SymbolKind[member.kind],
                     container: container.name,
                     file: sym.location.uri.fsPath,
-                    line: member.range.start.line,
+                    line: member.range.start.line + 1,
                   },
                   uri: sym.location.uri.toString(),
                   range: {
                     start: {
-                      line: member.range.start.line,
+                      line: member.range.start.line + 1,
                       character: member.range.start.character,
                     },
                     end: {
-                      line: member.range.end.line,
+                      line: member.range.end.line + 1,
                       character: member.range.end.character,
                     },
                   },
@@ -126,13 +127,13 @@ async function findDefinitionBySymbol(
               sym.name,
               vscode.SymbolKind[sym.kind].toLowerCase(),
               sym.location.uri.fsPath,
-              sym.location.range.start.line,
+              sym.location.range.start.line + 1,
             ],
             uri: sym.location.uri.toString(),
             range: [
-              sym.location.range.start.line,
+              sym.location.range.start.line + 1,
               sym.location.range.start.character,
-              sym.location.range.end.line,
+              sym.location.range.end.line + 1,
               sym.location.range.end.character,
             ],
           });
@@ -143,16 +144,16 @@ async function findDefinitionBySymbol(
               kind: vscode.SymbolKind[sym.kind],
               container: sym.containerName,
               file: sym.location.uri.fsPath,
-              line: sym.location.range.start.line,
+              line: sym.location.range.start.line + 1,
             },
             uri: sym.location.uri.toString(),
             range: {
               start: {
-                line: sym.location.range.start.line,
+                line: sym.location.range.start.line + 1,
                 character: sym.location.range.start.character,
               },
               end: {
-                line: sym.location.range.end.line,
+                line: sym.location.range.end.line + 1,
                 character: sym.location.range.end.character,
               },
             },

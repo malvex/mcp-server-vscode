@@ -3,7 +3,8 @@ import { Tool } from '../types';
 
 export const debug_evaluateExpressionTool: Tool = {
   name: 'debug_evaluateExpression',
-  description: 'Evaluate an expression in the current debug context (REPL/watch functionality)',
+  description:
+    'Evaluate an expression in the current debug context (REPL/watch functionality). Test hypotheses instantly - execute any expression without modifying code',
   inputSchema: {
     type: 'object',
     properties: {

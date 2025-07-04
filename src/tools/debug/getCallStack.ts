@@ -3,7 +3,8 @@ import { Tool } from '../types';
 
 export const debug_getCallStackTool: Tool = {
   name: 'debug_getCallStack',
-  description: 'Get the current call stack/stack trace from the paused debug session',
+  description:
+    'Get the current call stack/stack trace from the paused debug session. Understand execution flow instantly - see the complete call chain at a glance',
   inputSchema: {
     type: 'object',
     properties: {
@@ -69,8 +70,8 @@ export const debug_getCallStackTool: Tool = {
           stack: frames.map((frame: any) => [
             frame.name,
             frame.source?.path ? vscode.workspace.asRelativePath(frame.source.path) : 'unknown',
-            frame.line - 1, // Convert to 0-based for AI
-            frame.column - 1, // Convert to 0-based for AI
+            frame.line, // DAP is already 1-based
+            frame.column, // DAP is already 1-based
           ]),
           totalFrames: stackResponse.totalFrames || frames.length,
         };
@@ -85,8 +86,8 @@ export const debug_getCallStackTool: Tool = {
             ? {
                 path: vscode.workspace.asRelativePath(frame.source.path),
                 name: frame.source.name,
-                line: frame.line - 1, // Convert to 0-based
-                column: frame.column - 1, // Convert to 0-based
+                line: frame.line, // DAP is already 1-based
+                column: frame.column, // DAP is already 1-based
               }
             : null,
           presentationHint: frame.presentationHint,

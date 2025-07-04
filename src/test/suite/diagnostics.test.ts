@@ -42,7 +42,7 @@ suite('Diagnostics Tool Tests', () => {
         d.message.includes('Type') &&
         d.message.includes('string') &&
         d.message.includes('number') &&
-        d.range.start.line === 22 // hasTypeError function line with type error (0-based)
+        d.range.start.line === 23 // hasTypeError function line with type error (1-based)
     );
 
     assert.ok(typeError, 'Should detect type mismatch error');

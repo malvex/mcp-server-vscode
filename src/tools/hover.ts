@@ -4,7 +4,8 @@ import { searchWorkspaceSymbols } from './utils/symbolProvider';
 
 export const hoverTool: Tool = {
   name: 'hover',
-  description: 'Get hover information (type info, documentation) for a symbol by name',
+  description:
+    'Get hover information (type info, documentation) for a symbol by name. MUCH FASTER than reading entire files when you just need to understand a function signature or type',
   inputSchema: {
     type: 'object',
     properties: {
@@ -126,7 +127,7 @@ export const hoverTool: Tool = {
             sym.name,
             vscode.SymbolKind[sym.kind].toLowerCase(),
             sym.location.uri.fsPath,
-            sym.location.range.start.line,
+            sym.location.range.start.line + 1,
           ],
           hover: contents,
         });
@@ -137,7 +138,7 @@ export const hoverTool: Tool = {
             kind: vscode.SymbolKind[sym.kind],
             container: sym.containerName,
             file: sym.location.uri.fsPath,
-            line: sym.location.range.start.line, // Keep 0-based for AI
+            line: sym.location.range.start.line + 1,
           },
           hover: {
             contents: contents,

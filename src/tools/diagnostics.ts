@@ -3,7 +3,8 @@ import { Tool } from './types';
 
 export const diagnosticsTool: Tool = {
   name: 'diagnostics',
-  description: 'Get diagnostics (errors, warnings, info) for a file or entire workspace',
+  description:
+    'Get diagnostics (errors, warnings, info) for a file or entire workspace. Instantly see all problems without running builds - includes type errors, linting issues, and more',
   inputSchema: {
     type: 'object',
     properties: {
@@ -35,9 +36,9 @@ export const diagnosticsTool: Tool = {
             ? diagnostics.map((diag) => [
                 vscode.DiagnosticSeverity[diag.severity].toLowerCase(),
                 diag.message,
-                diag.range.start.line,
+                diag.range.start.line + 1,
                 diag.range.start.character,
-                diag.range.end.line,
+                diag.range.end.line + 1,
                 diag.range.end.character,
                 diag.source || '',
                 diag.code || '',
@@ -46,8 +47,8 @@ export const diagnosticsTool: Tool = {
                 severity: vscode.DiagnosticSeverity[diag.severity],
                 message: diag.message,
                 range: {
-                  start: { line: diag.range.start.line, character: diag.range.start.character },
-                  end: { line: diag.range.end.line, character: diag.range.end.character },
+                  start: { line: diag.range.start.line + 1, character: diag.range.start.character },
+                  end: { line: diag.range.end.line + 1, character: diag.range.end.character },
                 },
                 source: diag.source,
                 code: diag.code,
@@ -65,9 +66,9 @@ export const diagnosticsTool: Tool = {
               ? diagnostics.map((diag) => [
                   vscode.DiagnosticSeverity[diag.severity].toLowerCase(),
                   diag.message,
-                  diag.range.start.line,
+                  diag.range.start.line + 1,
                   diag.range.start.character,
-                  diag.range.end.line,
+                  diag.range.end.line + 1,
                   diag.range.end.character,
                   diag.source || '',
                   diag.code || '',
@@ -76,8 +77,11 @@ export const diagnosticsTool: Tool = {
                   severity: vscode.DiagnosticSeverity[diag.severity],
                   message: diag.message,
                   range: {
-                    start: { line: diag.range.start.line, character: diag.range.start.character },
-                    end: { line: diag.range.end.line, character: diag.range.end.character },
+                    start: {
+                      line: diag.range.start.line + 1,
+                      character: diag.range.start.character,
+                    },
+                    end: { line: diag.range.end.line + 1, character: diag.range.end.character },
                   },
                   source: diag.source,
                   code: diag.code,

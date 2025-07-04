@@ -18,7 +18,7 @@ export const debug_toggleBreakpointTool: Tool = {
       },
       line: {
         type: 'number',
-        description: 'Line number (0-based)',
+        description: 'Line number (1-based)',
       },
       format: {
         type: 'string',
@@ -60,6 +60,9 @@ export const debug_toggleBreakpointTool: Tool = {
     }
     // Find location by file/line
     else if (file && line !== undefined) {
+      // Convert from 1-based (user input) to 0-based (VS Code)
+      targetLine = line - 1;
+
       const files = await vscode.workspace.findFiles(`**/${file}`);
       if (files.length === 0) {
         return format === 'compact'
@@ -67,7 +70,6 @@ export const debug_toggleBreakpointTool: Tool = {
           : { error: `File '${file}' not found in workspace` };
       }
       targetUri = files[0];
-      targetLine = line; // Expect 0-based input
     }
 
     // Check if breakpoint exists
@@ -88,14 +90,14 @@ export const debug_toggleBreakpointTool: Tool = {
         return {
           action: 'removed',
           bpFormat: '[file, line, enabled]',
-          bp: [vscode.workspace.asRelativePath(targetUri!), targetLine!, false],
+          bp: [vscode.workspace.asRelativePath(targetUri!), targetLine! + 1, false],
         };
       }
       return {
         action: 'removed',
         breakpoint: {
           file: vscode.workspace.asRelativePath(targetUri!),
-          line: targetLine!, // 0-based
+          line: targetLine! + 1,
           symbol: symbol || undefined,
         },
       };
@@ -109,14 +111,14 @@ export const debug_toggleBreakpointTool: Tool = {
         return {
           action: 'added',
           bpFormat: '[file, line, enabled]',
-          bp: [vscode.workspace.asRelativePath(targetUri!), targetLine!, true],
+          bp: [vscode.workspace.asRelativePath(targetUri!), targetLine! + 1, true],
         };
       }
       return {
         action: 'added',
         breakpoint: {
           file: vscode.workspace.asRelativePath(targetUri!),
-          line: targetLine!, // 0-based
+          line: targetLine! + 1,
           enabled: true,
           symbol: symbol || undefined,
         },

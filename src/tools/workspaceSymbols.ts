@@ -88,7 +88,8 @@ const NON_CODE_LANGUAGE_IDS = [
 
 export const workspaceSymbolsTool: Tool = {
   name: 'workspaceSymbols',
-  description: 'Get a complete map of all symbols in the workspace (classes, functions, etc)',
+  description:
+    'Get a complete map of all symbols in the workspace (classes, functions, etc). ESSENTIAL for understanding codebase structure - use this instead of searching through files manually',
   inputSchema: {
     type: 'object',
     properties: {
@@ -244,7 +245,7 @@ export const workspaceSymbolsTool: Tool = {
       if (format === 'compact') {
         return {
           totalSymbols,
-          symbolFormat: '[fullName, kind, line]',
+          symbolFormat: '[fullName, kind, line]', // line is 1-based
           symbols: symbolsByFile,
         };
       } else {
@@ -287,11 +288,11 @@ function processDocumentSymbols(
     if (includeDetails) {
       processedSymbol.range = {
         start: {
-          line: symbol.range.start.line, // Keep 0-based for AI
+          line: symbol.range.start.line + 1,
           character: symbol.range.start.character,
         },
         end: {
-          line: symbol.range.end.line,
+          line: symbol.range.end.line + 1,
           character: symbol.range.end.character,
         },
       };
@@ -352,7 +353,11 @@ function processDocumentSymbolsCompact(
     const fullName = parentPath ? `${parentPath}.${symbol.name}` : symbol.name;
 
     // Add the symbol as [name, kind, line]
-    results.push([fullName, vscode.SymbolKind[symbol.kind].toLowerCase(), symbol.range.start.line]);
+    results.push([
+      fullName,
+      vscode.SymbolKind[symbol.kind].toLowerCase(),
+      symbol.range.start.line + 1,
+    ]);
 
     // Process children recursively
     if (symbol.children && symbol.children.length > 0) {

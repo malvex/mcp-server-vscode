@@ -4,7 +4,8 @@ import { searchWorkspaceSymbols } from './utils/symbolProvider';
 
 export const symbolSearchTool: Tool = {
   name: 'symbolSearch',
-  description: 'Search for symbols (classes, functions, variables) across the workspace',
+  description:
+    'Search for symbols (classes, functions, variables) across the workspace. Instant semantic search - finds exact matches unlike text-based grep',
   inputSchema: {
     type: 'object',
     properties: {
@@ -69,7 +70,7 @@ export const symbolSearchTool: Tool = {
           sym.name,
           vscode.SymbolKind[sym.kind].toLowerCase(),
           sym.location.uri.toString(),
-          sym.location.range.start.line,
+          sym.location.range.start.line + 1,
           sym.containerName || '',
         ]),
       };
@@ -82,7 +83,7 @@ export const symbolSearchTool: Tool = {
               sym.name,
               vscode.SymbolKind[sym.kind].toLowerCase(),
               sym.location.uri.toString(),
-              sym.location.range.start.line,
+              sym.location.range.start.line + 1,
               sym.containerName || '',
             ])
           : filteredSymbols.map((sym) => ({
@@ -93,11 +94,11 @@ export const symbolSearchTool: Tool = {
                 uri: sym.location.uri.toString(),
                 range: {
                   start: {
-                    line: sym.location.range.start.line,
+                    line: sym.location.range.start.line + 1,
                     character: sym.location.range.start.character,
                   },
                   end: {
-                    line: sym.location.range.end.line,
+                    line: sym.location.range.end.line + 1,
                     character: sym.location.range.end.character,
                   },
                 },

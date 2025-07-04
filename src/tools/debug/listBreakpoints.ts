@@ -3,7 +3,8 @@ import { Tool } from '../types';
 
 export const debug_listBreakpointsTool: Tool = {
   name: 'debug_listBreakpoints',
-  description: 'List all current breakpoints in the workspace',
+  description:
+    'List all current breakpoints in the workspace. See all breakpoints at once - perfect for debugging complex flows',
   inputSchema: {
     type: 'object',
     properties: {
@@ -25,7 +26,7 @@ export const debug_listBreakpointsTool: Tool = {
         const location = bp.location;
         return {
           file: vscode.workspace.asRelativePath(location.uri),
-          line: location.range.start.line, // 0-based
+          line: location.range.start.line + 1,
           enabled: bp.enabled,
           condition: bp.condition,
           hitCondition: bp.hitCondition,
