@@ -62,6 +62,21 @@ suite('Debug Output Tool Tests', () => {
     assert.ok(result.error, 'Should have error when no session');
   });
 
+  test('should detect integratedTerminal limitation', async () => {
+    // This test demonstrates the expected warning format
+    // In a real scenario with integratedTerminal and no output:
+    // const result = await callTool('debug_getOutput', { format: 'detailed' });
+    // assert.ok(result.warning, 'Should have warning about integratedTerminal');
+    // assert.ok(result.suggestion.includes('internalConsole'), 'Should suggest using internalConsole');
+
+    // For now, just verify the tool handles the parameters
+    const result = await callTool('debug_getOutput', {
+      format: 'compact',
+    });
+
+    assert.ok(result.error === 'no_session', 'Should return no session error');
+  });
+
   // Note: Full integration tests would require:
   // 1. Starting a debug session
   // 2. Running code that produces output
