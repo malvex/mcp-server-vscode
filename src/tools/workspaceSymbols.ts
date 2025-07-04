@@ -19,19 +19,36 @@ export const workspaceSymbolsTool: Tool = {
         type: 'number',
         description: 'Maximum number of files to process (default: 1000)',
       },
+      includeExternalSymbols: {
+        type: 'boolean',
+        description: 'Include symbols from external dependencies and libraries (default: false)',
+      },
     },
     required: [],
   },
   handler: async (args) => {
-    const { includeDetails = true, filePattern = '**/*', maxFiles = 1000 } = args;
+    const {
+      includeDetails = true,
+      filePattern = '**/*',
+      maxFiles = 1000,
+      includeExternalSymbols = false,
+    } = args;
 
     try {
+      // Get workspace folders to filter out external files
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        return {
+          error: 'No workspace folder open',
+        };
+      }
+
+      // Common exclude patterns for external dependencies
+      const excludePattern =
+        '{**/node_modules/**,**/.vscode/**,**/venv/**,**/.env/**,**/site-packages/**,**/__pycache__/**,**/.git/**}';
+
       // Find all files matching the pattern
-      const files = await vscode.workspace.findFiles(
-        filePattern,
-        '**/node_modules/**', // Exclude node_modules
-        maxFiles
-      );
+      const files = await vscode.workspace.findFiles(filePattern, excludePattern, maxFiles);
 
       const symbolsByFile: Record<string, any[]> = {};
       let totalSymbols = 0;
@@ -39,6 +56,30 @@ export const workspaceSymbolsTool: Tool = {
       // Process each file
       for (const fileUri of files) {
         try {
+          // CRITICAL: Only process files that are within the workspace folders
+          if (!includeExternalSymbols) {
+            const isInWorkspace = workspaceFolders.some((folder) =>
+              fileUri.fsPath.startsWith(folder.uri.fsPath)
+            );
+
+            if (!isInWorkspace) {
+              // Skip files outside workspace (e.g., from extensions or libraries)
+              continue;
+            }
+
+            // Additional check: Skip files from VS Code extensions or Python type stubs
+            if (
+              fileUri.fsPath.includes('.vscode/extensions/') ||
+              fileUri.fsPath.includes('.vscode-server/extensions/') ||
+              fileUri.fsPath.includes('typeshed-fallback/') ||
+              fileUri.fsPath.includes('site-packages/') ||
+              fileUri.fsPath.includes('/lib/python') ||
+              fileUri.fsPath.includes('\\lib\\python')
+            ) {
+              continue;
+            }
+          }
+
           const document = await vscode.workspace.openTextDocument(fileUri);
 
           // Skip binary files
