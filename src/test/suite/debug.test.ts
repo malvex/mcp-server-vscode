@@ -8,7 +8,7 @@ import {
   TestContext,
 } from '../helpers/testHelpers';
 
-suite('Debug Tool Tests', () => {
+suite('Debug Tools Tests', () => {
   let context: TestContext;
 
   suiteSetup(async () => {
@@ -52,8 +52,7 @@ suite('Debug Tool Tests', () => {
     vscode.debug.addBreakpoints([bp1, bp2]);
 
     // Call the tool to list breakpoints
-    const result = await callTool('debug', {
-      action: 'listBreakpoints',
+    const result = await callTool('listBreakpoints', {
       format: 'detailed',
     });
 
@@ -79,8 +78,7 @@ suite('Debug Tool Tests', () => {
     assert.ok(vscode.debug.breakpoints.length > 0, 'Should have breakpoints before clear');
 
     // Clear all breakpoints
-    const result = await callTool('debug', {
-      action: 'clearBreakpoints',
+    const result = await callTool('clearBreakpoints', {
       format: 'detailed',
     });
 
@@ -92,8 +90,7 @@ suite('Debug Tool Tests', () => {
   test('should set breakpoint by symbol name', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('debug', {
-      action: 'setBreakpoint',
+    const result = await callTool('setBreakpoint', {
       symbol: 'calculateSum',
       format: 'detailed',
     });
@@ -113,8 +110,7 @@ suite('Debug Tool Tests', () => {
   test('should set breakpoint with condition', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('debug', {
-      action: 'setBreakpoint',
+    const result = await callTool('setBreakpoint', {
       symbol: 'calculateSum',
       condition: 'numbers.length > 5',
       format: 'detailed',
@@ -132,8 +128,7 @@ suite('Debug Tool Tests', () => {
   test('should set breakpoint by file and line', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('debug', {
-      action: 'setBreakpoint',
+    const result = await callTool('setBreakpoint', {
       file: 'app.ts',
       line: 9,
       format: 'detailed',
@@ -148,8 +143,7 @@ suite('Debug Tool Tests', () => {
   test('should handle symbol not found', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('debug', {
-      action: 'setBreakpoint',
+    const result = await callTool('setBreakpoint', {
       symbol: 'nonExistentFunction',
       format: 'detailed',
     });
@@ -164,8 +158,7 @@ suite('Debug Tool Tests', () => {
     await openTestFile('app.ts');
 
     // First call should set breakpoint
-    const result1 = await callTool('debug', {
-      action: 'toggleBreakpoint',
+    const result1 = await callTool('toggleBreakpoint', {
       symbol: 'calculateSum',
       format: 'detailed',
     });
@@ -175,8 +168,7 @@ suite('Debug Tool Tests', () => {
     assert.strictEqual(vscode.debug.breakpoints.length, 1, 'Should have 1 breakpoint');
 
     // Second call should remove breakpoint
-    const result2 = await callTool('debug', {
-      action: 'toggleBreakpoint',
+    const result2 = await callTool('toggleBreakpoint', {
       symbol: 'calculateSum',
       format: 'detailed',
     });
@@ -186,26 +178,11 @@ suite('Debug Tool Tests', () => {
     assert.strictEqual(vscode.debug.breakpoints.length, 0, 'Should have 0 breakpoints');
   });
 
-  test('should show help information', async () => {
-    const result = await callTool('debug', {
-      action: 'help',
-      format: 'detailed',
-    });
-
-    assert.ok(!result.error, 'Should not have error');
-    assert.ok(result.description, 'Should have description');
-    assert.ok(result.actions, 'Should have actions list');
-    assert.ok(result.actions.setBreakpoint, 'Should document setBreakpoint action');
-    assert.ok(result.actions.setBreakpoint.examples, 'Should include examples');
-    assert.ok(result.formats, 'Should document available formats');
-  });
-
   test('should list breakpoints with conditions in compact format', async () => {
     await openTestFile('app.ts');
 
     // Set a conditional breakpoint
-    const setBpResult = await callTool('debug', {
-      action: 'setBreakpoint',
+    const setBpResult = await callTool('setBreakpoint', {
       symbol: 'calculateSum',
       condition: 'numbers.length > 10',
       format: 'detailed',
@@ -214,8 +191,7 @@ suite('Debug Tool Tests', () => {
     assert.ok(!setBpResult.error, 'Should set conditional breakpoint');
 
     // List breakpoints in compact format
-    const result = await callTool('debug', {
-      action: 'listBreakpoints',
+    const result = await callTool('listBreakpoints', {
       format: 'compact',
     });
 
@@ -235,8 +211,7 @@ suite('Debug Tool Tests', () => {
   });
 
   test('should get debug configurations', async () => {
-    const result = await callTool('debug', {
-      action: 'listConfigurations',
+    const result = await callTool('listDebugConfigurations', {
       format: 'detailed',
     });
 
@@ -250,8 +225,7 @@ suite('Debug Tool Tests', () => {
   });
 
   test('should provide debug status', async () => {
-    const result = await callTool('debug', {
-      action: 'status',
+    const result = await callTool('debugStatus', {
       format: 'detailed',
     });
 
@@ -265,8 +239,7 @@ suite('Debug Tool Tests', () => {
   test('should handle compact format', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('debug', {
-      action: 'setBreakpoint',
+    const result = await callTool('setBreakpoint', {
       symbol: 'calculateSum',
       format: 'compact',
     });
@@ -283,32 +256,19 @@ suite('Debug Tool Tests', () => {
   });
 
   test('should validate input parameters', async () => {
-    // Test missing action
-    const result1 = await callTool('debug', {
+    // Test missing required parameters for setBreakpoint
+    const result = await callTool('setBreakpoint', {
       format: 'detailed',
     } as any);
 
-    console.log('Missing action result:', result1);
-    assert.ok(result1.error, 'Should have error for missing action');
+    console.log('Missing required parameters result:', result);
+    assert.ok(result.error, 'Should have error for missing parameters');
     assert.ok(
-      result1.error.includes('required') || result1.error.includes('action'),
-      'Should mention required parameter'
-    );
-
-    // Test invalid action
-    const result = await callTool('debug', {
-      action: 'invalidAction',
-      format: 'detailed',
-    });
-
-    console.log('Invalid action result:', result);
-    assert.ok(result.error, 'Should have error for invalid action');
-    assert.ok(
-      result.error.includes('Unknown') ||
-        result.error.includes('unknown') ||
-        result.error.includes('Invalid value') ||
-        result.error.includes('must be one of'),
-      'Should mention invalid/unknown action'
+      result.error.toLowerCase().includes('required') ||
+        result.error.toLowerCase().includes('oneof') ||
+        result.error.toLowerCase().includes('must have') ||
+        result.error.toLowerCase().includes('provide'),
+      'Should mention required parameters'
     );
   });
 
@@ -316,8 +276,7 @@ suite('Debug Tool Tests', () => {
     await openTestFile('math.ts');
 
     // 'add' exists as both a function and a method
-    const result = await callTool('debug', {
-      action: 'setBreakpoint',
+    const result = await callTool('setBreakpoint', {
       symbol: 'add',
       format: 'detailed',
     });
@@ -341,8 +300,7 @@ suite('Debug Tool Tests', () => {
 
   // Skip debug session tests for now as they require more setup
   test.skip('should start debug session', async () => {
-    const result = await callTool('debug', {
-      action: 'start',
+    const result = await callTool('startDebugSession', {
       configuration: 'Debug TypeScript File',
       format: 'detailed',
     });
