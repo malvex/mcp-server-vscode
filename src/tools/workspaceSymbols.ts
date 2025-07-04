@@ -173,6 +173,7 @@ export const workspaceSymbolsTool: Tool = {
       const symbolsByFile: Record<string, any[]> = {};
       let totalSymbols = 0;
       let skippedFiles = 0;
+      const successfullyParsedLanguages = new Set<string>();
 
       // Process each file
       for (const fileUri of files) {
@@ -222,6 +223,7 @@ export const workspaceSymbolsTool: Tool = {
           const filePath = vscode.workspace.asRelativePath(fileUri);
 
           // Handle cold start transparently: retry if symbols are null/undefined for known languages
+          // BUT only if we haven't already confirmed the language server is working
           if (symbols === undefined || symbols === null) {
             const knownLanguages = [
               'typescript',
@@ -231,11 +233,21 @@ export const workspaceSymbolsTool: Tool = {
               'csharp',
               'go',
               'rust',
+              'ruby',
+              'php',
+              'cpp',
+              'c',
             ];
-            if (knownLanguages.includes(document.languageId)) {
-              // Silently retry a few times for known languages
-              for (let retry = 0; retry < 3; retry++) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            // Only retry if this is a known language AND we haven't successfully parsed any file of this type yet
+            if (
+              knownLanguages.includes(document.languageId) &&
+              !successfullyParsedLanguages.has(document.languageId)
+            ) {
+              // Progressive retry with increasing delays: 1s, 3s, 10s
+              const retryDelays = [1000, 3000, 10000];
+              for (let retry = 0; retry < retryDelays.length; retry++) {
+                await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
                 symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
                   'vscode.executeDocumentSymbolProvider',
                   document.uri
@@ -245,6 +257,7 @@ export const workspaceSymbolsTool: Tool = {
                 }
               }
             }
+            // If still null after retries (or we skipped retries), it stays null
           }
 
           if (symbols && symbols.length > 0) {
@@ -254,12 +267,17 @@ export const workspaceSymbolsTool: Tool = {
               symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
             }
             totalSymbols += countSymbols(symbols);
+            // Mark this language as successfully parsed
+            successfullyParsedLanguages.add(document.languageId);
           } else if (symbols === undefined || symbols === null) {
-            // Language server not available even after retries - skip silently
+            // Language server returned null/undefined - skip this file
+            // Could be due to syntax errors or language server not ready
             skippedFiles++;
           } else {
-            // Empty array means file was parsed but has no symbols - skip it
+            // Empty array means file was parsed but has no symbols - this is fine
             skippedFiles++;
+            // Mark language as successfully parsed even if no symbols found
+            successfullyParsedLanguages.add(document.languageId);
           }
         } catch (error) {
           // Skip files that can't be processed

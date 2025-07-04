@@ -107,6 +107,7 @@ export const debugTool: Tool = {
         } else {
           throw new Error('Either provide a symbol name OR uri with line');
         }
+        break;
 
       case 'removeBreakpoint':
         if (!uri || line === undefined) {
