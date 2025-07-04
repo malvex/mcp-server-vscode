@@ -1,0 +1,73 @@
+repos:
+  # General file fixes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-json
+      - id: pretty-format-json
+        args: ['--autofix', '--no-sort-keys']
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: fix-byte-order-marker
+
+  # TypeScript/JavaScript specific
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.57.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        args: ['--fix']
+        additional_dependencies:
+          - eslint@8.56.0
+          - '@typescript-eslint/eslint-plugin@6.15.0'
+          - '@typescript-eslint/parser@6.15.0'
+          - 'typescript@5.3.3'
+
+  # Prettier for formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.3.3
+    hooks:
+      - id: prettier
+        types_or: [javascript, ts, json, markdown, yaml]
+        args: ['--write']
+        additional_dependencies:
+          - prettier@3.3.3
+          - '@types/node@20.10.0'
+
+  # TypeScript type checking
+  - repo: local
+    hooks:
+      - id: typescript
+        name: TypeScript type check
+        entry: npx tsc --noEmit
+        language: system
+        types: [ts]
+        pass_filenames: false
+        require_serial: true
+
+  # Package.json validation
+  - repo: local
+    hooks:
+      - id: validate-package-json
+        name: Validate package.json
+        entry: node -e "JSON.parse(require('fs').readFileSync('package.json'))"
+        language: system
+        files: package\.json$
+
+# Global exclude patterns
+exclude: |
+  (?x)^(
+    out/|
+    dist/|
+    \.vscode-test/|
+    node_modules/|
+    .*\.vsix$|
+    package-lock\.json$
+  )
