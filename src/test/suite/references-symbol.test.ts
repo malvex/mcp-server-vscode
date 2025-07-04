@@ -113,7 +113,7 @@ suite('References Tool Symbol-Based Tests', () => {
     assert.strictEqual(result.totalReferences, 0, 'Should have 0 total references');
   });
 
-  test.skip('should validate input parameters', async () => {
+  test('should validate input parameters', async () => {
     // Test with no parameters
     const result = await callTool('references', {
       format: 'detailed',

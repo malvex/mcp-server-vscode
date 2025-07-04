@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as http from 'http';
 import { getTools } from '../tools';
+import { validateToolArguments } from './validate';
 
 export class HTTPBridge {
   private httpServer: http.Server | undefined;
@@ -38,7 +39,15 @@ export class HTTPBridge {
               return;
             }
 
-            const result = await toolImpl.handler(args);
+            // Validate arguments
+            const validation = validateToolArguments(args || {}, toolImpl.inputSchema);
+            if (!validation.valid) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ error: validation.error }));
+              return;
+            }
+
+            const result = await toolImpl.handler(args || {});
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ result }));
           } catch (error) {

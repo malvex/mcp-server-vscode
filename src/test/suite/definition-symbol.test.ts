@@ -134,7 +134,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
     }
   });
 
-  test.skip('should validate input parameters', async () => {
+  test('should validate input parameters', async () => {
     // Test with no parameters
     const result = await callTool('definition', {
       format: 'detailed',

@@ -6,6 +6,7 @@ const {
 } = require('@modelcontextprotocol/sdk/types.js');
 import { ChildProcess } from 'child_process';
 import { getTools } from '../tools';
+import { validateToolArguments } from './validate';
 
 export class MCPServer {
   private server: any;
@@ -52,8 +53,21 @@ export class MCPServer {
         throw new Error(`Unknown tool: ${request.params.name}`);
       }
 
+      // Validate arguments against schema
+      const validation = validateToolArguments(request.params.arguments || {}, tool.inputSchema);
+      if (!validation.valid) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ error: validation.error }, null, 2),
+            },
+          ],
+        };
+      }
+
       try {
-        const result = await tool.handler(request.params.arguments);
+        const result = await tool.handler(request.params.arguments || {});
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return {

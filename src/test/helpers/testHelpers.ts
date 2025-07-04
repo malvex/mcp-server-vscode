@@ -96,6 +96,11 @@ export async function callTool(toolName: string, args: any, port: number = 3001)
           if (res.statusCode !== 200) {
             try {
               const errorData = JSON.parse(responseData);
+              // For 400 errors (validation), return the error as a result
+              if (res.statusCode === 400) {
+                resolve({ error: errorData.error });
+                return;
+              }
               reject(new Error(errorData?.error || `HTTP ${res.statusCode}: ${responseData}`));
             } catch {
               reject(new Error(`HTTP ${res.statusCode}: ${responseData}`));
