@@ -64,7 +64,10 @@ suite('Call Hierarchy Tool Tests', () => {
     // Verify the call location details
     assert.ok(callFromCalculateSum.locations, 'Should have call locations');
     assert.ok(callFromCalculateSum.locations.length > 0, 'Should have at least one location');
-    assert.ok(callFromCalculateSum.locations[0].line > 0, 'Should have valid line number');
+    assert.ok(
+      callFromCalculateSum.locations[0].line >= 0,
+      'Should have valid line number (0-based)'
+    );
   });
 
   test('should find outgoing calls from calculateSum function', async () => {
@@ -149,7 +152,7 @@ suite('Call Hierarchy Tool Tests', () => {
       if (firstCall.locations.length > 0) {
         const loc = firstCall.locations[0];
         assert.ok(typeof loc.line === 'number', 'Line should be a number');
-        assert.ok(loc.line > 0, 'Line should be 1-based (human readable)');
+        assert.ok(loc.line >= 0, 'Line should be 0-based for AI');
         assert.ok(typeof loc.character === 'number', 'Character should be a number');
 
         // If preview is included, verify it

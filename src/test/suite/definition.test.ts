@@ -33,7 +33,8 @@ suite('Definition Tool Tests', () => {
 
     const def = result.definitions[0];
     assert.ok(def.uri.endsWith('math.ts'), 'Should point to math.ts file');
-    assert.strictEqual(def.range.start.line, 6, 'Should point to line 7 (add function)');
+    console.log('Definition result line:', def.range.start.line);
+    assert.strictEqual(def.range.start.line, 6, 'Should point to line 7 (add function, 0-based)');
   });
 
   test('should find class definition from usage', async () => {
@@ -51,7 +52,11 @@ suite('Definition Tool Tests', () => {
 
     const def = result.definitions[0];
     assert.ok(def.uri.endsWith('math.ts'), 'Should point to math.ts file');
-    assert.strictEqual(def.range.start.line, 20, 'Should point to Calculator class definition');
+    assert.strictEqual(
+      def.range.start.line,
+      20,
+      'Should point to Calculator class definition (0-based)'
+    );
   });
 
   test('should find method definition from usage', async () => {
@@ -69,7 +74,7 @@ suite('Definition Tool Tests', () => {
 
     const def = result.definitions[0];
     assert.ok(def.uri.endsWith('math.ts'), 'Should point to math.ts file');
-    assert.strictEqual(def.range.start.line, 34, 'Should point to getResult method');
+    assert.strictEqual(def.range.start.line, 34, 'Should point to getResult method (0-based)');
   });
 
   test('should find import source', async () => {
@@ -117,6 +122,6 @@ suite('Definition Tool Tests', () => {
 
     const def = result.definitions[0];
     assert.ok(def.uri.endsWith('app.ts'), 'Should point to same file');
-    assert.strictEqual(def.range.start.line, 9, 'Should point to variable declaration');
+    assert.strictEqual(def.range.start.line, 9, 'Should point to variable declaration (0-based)');
   });
 });

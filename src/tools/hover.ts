@@ -121,11 +121,11 @@ export const hoverTool: Tool = {
           kind: vscode.SymbolKind[sym.kind],
           container: sym.containerName,
           file: sym.location.uri.fsPath,
-          line: sym.location.range.start.line + 1, // Human-readable (1-based)
+          line: sym.location.range.start.line, // Keep 0-based for AI
         },
         hover: {
           contents: contents,
-          // Include code snippet for context
+          // Include code snippet for context (line is already 0-based)
           codeSnippet: getCodeSnippet(document, sym.location.range.start.line),
         },
       });
@@ -164,7 +164,7 @@ function getCodeSnippet(
   for (let i = startLine; i <= endLine; i++) {
     const lineText = document.lineAt(i).text;
     const prefix = i === line ? '>' : ' ';
-    lines.push(`${prefix} ${i + 1}: ${lineText}`);
+    lines.push(`${prefix} ${i}: ${lineText}`);
   }
 
   return lines.join('\n');

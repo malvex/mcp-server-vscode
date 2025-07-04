@@ -7,6 +7,7 @@ import { debugTool } from './debug';
 import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
 import { executeCodeTool } from './executeCode';
+import { workspaceSymbolsTool } from './workspaceSymbols';
 
 export function getTools(): Tool[] {
   return [
@@ -18,5 +19,6 @@ export function getTools(): Tool[] {
     callHierarchyTool,
     symbolSearchTool,
     executeCodeTool,
+    workspaceSymbolsTool,
   ];
 }

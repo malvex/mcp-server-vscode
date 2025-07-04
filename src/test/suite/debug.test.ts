@@ -56,6 +56,9 @@ suite('Debug Tool Tests', () => {
   test('should remove a breakpoint', async () => {
     const document = await openTestFile('app.ts');
 
+    // Clear all breakpoints first
+    vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
+
     // First set a breakpoint
     await callTool('debug', {
       action: 'setBreakpoint',
