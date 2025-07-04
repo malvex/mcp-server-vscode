@@ -9,14 +9,14 @@ import { symbolSearchTool } from './symbolSearch';
 import { executeCodeTool } from './executeCode';
 
 export function getTools(): Tool[] {
-    return [
-        hoverTool,
-        definitionTool,
-        diagnosticsTool,
-        referencesTool,
-        debugTool,
-        callHierarchyTool,
-        symbolSearchTool,
-        executeCodeTool,
-    ];
+  return [
+    hoverTool,
+    definitionTool,
+    diagnosticsTool,
+    referencesTool,
+    debugTool,
+    callHierarchyTool,
+    symbolSearchTool,
+    executeCodeTool,
+  ];
 }
