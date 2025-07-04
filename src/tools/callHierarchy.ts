@@ -60,6 +60,15 @@ export const callHierarchyTool: Tool = {
       return nameMatches && uriMatches;
     });
 
+    // Step 2.5: Prioritize non-method symbols when no container is specified
+    if (!symbol.includes('.') && matchingSymbols.length > 1) {
+      // If searching for just "add", prefer standalone functions over methods
+      const standaloneSymbols = matchingSymbols.filter((s) => !s.containerName);
+      if (standaloneSymbols.length > 0) {
+        matchingSymbols = standaloneSymbols;
+      }
+    }
+
     if (matchingSymbols.length === 0) {
       return {
         error: `No exact match found for "${symbol}"`,
