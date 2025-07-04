@@ -11,8 +11,6 @@ repos:
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-json
-      - id: pretty-format-json
-        args: ['--autofix', '--no-sort-keys']
       - id: mixed-line-ending
         args: ['--fix=lf']
       - id: fix-byte-order-marker
