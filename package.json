@@ -22,6 +22,10 @@
       {
         "command": "vscode-mcp.stopServer",
         "title": "Stop MCP Server"
+      },
+      {
+        "command": "vscode-mcp.toggleServer",
+        "title": "Toggle MCP Server"
       }
     ],
     "configuration": {
