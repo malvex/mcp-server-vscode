@@ -144,21 +144,23 @@ export const workspaceSymbolsTool: Tool = {
       } else {
         // Use default code patterns - need to search each pattern separately
         // since VS Code glob doesn't support nested braces
-        const remainingFiles = maxFiles;
         const allFiles: vscode.Uri[] = [];
 
         for (const pattern of DEFAULT_CODE_PATTERNS) {
           if (allFiles.length >= maxFiles) break;
 
+          const remainingSlots = maxFiles - allFiles.length;
           const patternFiles = await vscode.workspace.findFiles(
             pattern,
             excludePattern,
-            remainingFiles - allFiles.length
+            remainingSlots
           );
-          allFiles.push(...patternFiles);
-        }
 
-        files = allFiles.slice(0, maxFiles);
+          // Add files up to the remaining slots
+          const filesToAdd = patternFiles.slice(0, remainingSlots);
+          allFiles.push(...filesToAdd);
+        }
+        files = allFiles;
       }
 
       const symbolsByFile: Record<string, any[]> = {};
@@ -209,10 +211,14 @@ export const workspaceSymbolsTool: Tool = {
             document.uri
           );
 
+          const filePath = vscode.workspace.asRelativePath(fileUri);
+
           if (symbols && symbols.length > 0) {
-            const filePath = vscode.workspace.asRelativePath(fileUri);
             symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
             totalSymbols += countSymbols(symbols);
+          } else {
+            // Still include the file even if it has no symbols
+            symbolsByFile[filePath] = [];
           }
         } catch (error) {
           // Skip files that can't be processed
