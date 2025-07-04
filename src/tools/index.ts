@@ -29,14 +29,6 @@ import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
 // import { executeCodeTool } from './executeCode';  // Commented out - redundant tool
 import { workspaceSymbolsTool } from './workspaceSymbols';
-import {
-  // Test tools
-  test_listTool,
-  test_runTool,
-  test_cancelTool,
-  test_showOutputTool,
-  test_clearResultsTool,
-} from './test';
 
 export function getTools(): Tool[] {
   return [
@@ -64,12 +56,6 @@ export function getTools(): Tool[] {
     debug_inspectVariablesTool,
     debug_evaluateExpressionTool,
     debug_getOutputTool,
-    // Test tools
-    test_listTool,
-    test_runTool,
-    test_cancelTool,
-    test_showOutputTool,
-    test_clearResultsTool,
     // Other tools
     callHierarchyTool,
     symbolSearchTool,
