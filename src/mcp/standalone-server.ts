@@ -1,12 +1,10 @@
 #!/usr/bin/env node
-const { Server } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
-const {
-  StdioServerTransport,
-} = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/stdio.js');
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
+const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-} = require('@modelcontextprotocol/sdk/dist/cjs/types.js');
+} = require('@modelcontextprotocol/sdk/types.js');
 const http = require('http');
 
 const VSCODE_BRIDGE_PORT = process.env.VSCODE_BRIDGE_PORT || '8991';
