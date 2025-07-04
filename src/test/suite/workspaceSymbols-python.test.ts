@@ -82,10 +82,16 @@ MY_CONSTANT = 42
       if (pythonFile) {
         const fileSymbols = result.files[pythonFile];
         console.log('File symbols:', fileSymbols);
-        assert.fail('Python file should be skipped when no symbols can be extracted');
+        // With fallback parser, we should now extract symbols from Python files
+        assert.ok(Array.isArray(fileSymbols), 'Should have symbols array');
+        assert.ok(fileSymbols.length > 0, 'Should have extracted symbols with fallback parser');
+
+        // Check that we found the expected symbols
+        const symbolNames = fileSymbols.map((s: any) => s.name);
+        assert.ok(symbolNames.includes('hello_world'), 'Should find hello_world function');
+        assert.ok(symbolNames.includes('Calculator'), 'Should find Calculator class');
       } else {
-        console.log('Good: Python file was skipped because no symbols could be extracted');
-        assert.ok(result.summary.skippedFiles > 0, 'Should have skipped files');
+        assert.fail('Python file should be included with fallback parser');
       }
     } finally {
       // Clean up

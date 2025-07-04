@@ -139,6 +139,7 @@ async function findReferencesBySymbol(
       symbol: symbolName,
       message: `Symbol '${symbolName}' not found in workspace`,
       references: [],
+      totalReferences: 0,
     };
   }
 
