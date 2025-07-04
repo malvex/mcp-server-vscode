@@ -133,10 +133,10 @@ MY_CONSTANT = 42
     }
   });
 
-  test('should wait for language server when waitForLanguageServer is true', async () => {
+  test('should handle cold start transparently', async () => {
     // Create a temporary TypeScript file
     const workspaceUri = vscode.workspace.workspaceFolders![0].uri;
-    const testFileUri = vscode.Uri.joinPath(workspaceUri, 'test_wait.ts');
+    const testFileUri = vscode.Uri.joinPath(workspaceUri, 'test_cold_start.ts');
     const content = `
 export function testFunction() {
   console.log('test');
@@ -151,29 +151,20 @@ export class TestClass {
     await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content));
 
     try {
-      // First try without waiting - might get no symbols if language server is not ready
-      const resultNoWait = await callTool('workspaceSymbols', {
+      // The tool should transparently handle cold start and retry
+      const result = await callTool('workspaceSymbols', {
         format: 'detailed',
-        filePattern: '**/test_wait.ts',
-        waitForLanguageServer: false,
+        filePattern: '**/test_cold_start.ts',
       });
 
-      // Then try with waiting - should get symbols
-      const resultWithWait = await callTool('workspaceSymbols', {
-        format: 'detailed',
-        filePattern: '**/test_wait.ts',
-        waitForLanguageServer: true,
-      });
+      console.log('Skipped files:', result.summary?.skippedFiles || 0);
 
-      console.log('Without wait - skipped files:', resultNoWait.summary?.skippedFiles || 0);
-      console.log('With wait - skipped files:', resultWithWait.summary?.skippedFiles || 0);
-
-      // With wait should have found the symbols
-      const testFile = Object.keys(resultWithWait.files || {}).find((f) =>
-        f.includes('test_wait.ts')
+      // Should have found the symbols (with transparent retries)
+      const testFile = Object.keys(result.files || {}).find((f) =>
+        f.includes('test_cold_start.ts')
       );
       if (testFile) {
-        const symbols = resultWithWait.files[testFile];
+        const symbols = result.files[testFile];
         assert.ok(symbols.length >= 2, 'Should find at least 2 symbols (function and class)');
 
         const symbolNames = symbols.map((s: any) => s.name);
@@ -182,7 +173,7 @@ export class TestClass {
       } else {
         // TypeScript language server should always be available in VS Code
         console.warn(
-          'TypeScript file was skipped even with wait - language server might be disabled'
+          'TypeScript file was skipped - language server might be disabled or very slow'
         );
       }
     } finally {

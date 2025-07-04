@@ -117,11 +117,6 @@ export const workspaceSymbolsTool: Tool = {
         description:
           'Output format: "compact" for AI/token efficiency, "detailed" for full data (default: "compact")',
       },
-      waitForLanguageServer: {
-        type: 'boolean',
-        description:
-          'Wait up to 5 seconds for language servers to initialize on cold start (default: false)',
-      },
     },
     required: [],
   },
@@ -133,7 +128,6 @@ export const workspaceSymbolsTool: Tool = {
       includeExternalSymbols = false,
       includeNonCodeFiles = false,
       format = 'compact',
-      waitForLanguageServer = false,
     } = args;
 
     try {
@@ -227,8 +221,8 @@ export const workspaceSymbolsTool: Tool = {
 
           const filePath = vscode.workspace.asRelativePath(fileUri);
 
-          // Handle cold start: retry if symbols are null/undefined and waitForLanguageServer is true
-          if ((symbols === undefined || symbols === null) && waitForLanguageServer) {
+          // Handle cold start transparently: retry if symbols are null/undefined for known languages
+          if (symbols === undefined || symbols === null) {
             const knownLanguages = [
               'typescript',
               'javascript',
@@ -239,17 +233,14 @@ export const workspaceSymbolsTool: Tool = {
               'rust',
             ];
             if (knownLanguages.includes(document.languageId)) {
-              console.log(`Language server not ready for ${document.languageId}, waiting...`);
-
-              // Try up to 5 times with 1 second delay
-              for (let retry = 0; retry < 5; retry++) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+              // Silently retry a few times for known languages
+              for (let retry = 0; retry < 3; retry++) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
                 symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
                   'vscode.executeDocumentSymbolProvider',
                   document.uri
                 );
                 if (symbols !== undefined && symbols !== null) {
-                  console.log(`Language server ready after ${retry + 1} seconds`);
                   break;
                 }
               }
@@ -264,21 +255,7 @@ export const workspaceSymbolsTool: Tool = {
             }
             totalSymbols += countSymbols(symbols);
           } else if (symbols === undefined || symbols === null) {
-            // Language server still not ready after retries
-            const knownLanguages = [
-              'typescript',
-              'javascript',
-              'python',
-              'java',
-              'csharp',
-              'go',
-              'rust',
-            ];
-            if (knownLanguages.includes(document.languageId)) {
-              console.warn(
-                `Language server not ready for ${document.languageId} file: ${filePath} - skipping`
-              );
-            }
+            // Language server not available even after retries - skip silently
             skippedFiles++;
           } else {
             // Empty array means file was parsed but has no symbols - skip it
