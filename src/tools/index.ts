@@ -23,6 +23,7 @@ import {
   debug_getCallStackTool,
   debug_inspectVariablesTool,
   debug_evaluateExpressionTool,
+  debug_getOutputTool,
 } from './debug';
 import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
@@ -54,6 +55,7 @@ export function getTools(): Tool[] {
     debug_getCallStackTool,
     debug_inspectVariablesTool,
     debug_evaluateExpressionTool,
+    debug_getOutputTool,
     // Other tools
     callHierarchyTool,
     symbolSearchTool,

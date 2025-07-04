@@ -1,12 +1,16 @@
 import * as vscode from 'vscode';
 import { MCPServer } from './mcp/server';
 import { HTTPBridge } from './mcp/http-bridge';
+import { debugOutputTracker } from './services/debugOutputTracker';
 
 let mcpServer: MCPServer | undefined;
 let httpBridge: HTTPBridge | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('VS Code MCP Server extension activated');
+
+  // Initialize debug output tracker
+  debugOutputTracker.initialize();
 
   // Show activation message
   vscode.window.showInformationMessage('VS Code MCP Server extension is now active!');
@@ -80,6 +84,9 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+  // Dispose debug output tracker
+  debugOutputTracker.dispose();
+
   if (httpBridge) {
     httpBridge.stop();
   }

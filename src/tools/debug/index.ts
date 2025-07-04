@@ -19,3 +19,4 @@ export { debug_stepOutTool } from './stepOut';
 export { debug_getCallStackTool } from './getCallStack';
 export { debug_inspectVariablesTool } from './inspectVariables';
 export { debug_evaluateExpressionTool } from './evaluateExpression';
+export { debug_getOutputTool } from './getOutput';
