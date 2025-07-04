@@ -15,6 +15,7 @@ suite('Workspace Symbols Filtering Tests', () => {
 
   test('should exclude external dependencies by default', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.ts',
       maxFiles: 100,
     });
@@ -56,6 +57,7 @@ suite('Workspace Symbols Filtering Tests', () => {
 
   test('should only include workspace files', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.ts',
       maxFiles: 50,
     });
@@ -87,6 +89,7 @@ suite('Workspace Symbols Filtering Tests', () => {
   test('should respect includeExternalSymbols option when true', async () => {
     // This test just verifies the option is accepted
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.ts',
       maxFiles: 10,
       includeExternalSymbols: true,
@@ -101,6 +104,7 @@ suite('Workspace Symbols Filtering Tests', () => {
 
   test('should handle Python projects without including type stubs', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.py',
       maxFiles: 50,
     });
@@ -127,6 +131,7 @@ suite('Workspace Symbols Filtering Tests', () => {
 
   test('should return reasonable token count for small projects', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.ts',
       maxFiles: 20,
       includeDetails: true,

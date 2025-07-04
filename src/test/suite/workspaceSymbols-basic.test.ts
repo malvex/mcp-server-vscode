@@ -13,8 +13,10 @@ suite('Workspace Symbols Basic Tests', () => {
   });
 
   test('should return code files with symbols when called with empty object', async () => {
-    // Call with empty object (no parameters)
-    const result = await callTool('workspaceSymbols', {});
+    // Call with detailed format to match expected structure
+    const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
+    });
 
     assert.ok(!result.error, `Should not have error: ${result.error}`);
     assert.ok(result.summary, 'Should have summary');
@@ -42,7 +44,9 @@ suite('Workspace Symbols Basic Tests', () => {
   });
 
   test('should find TypeScript files in test workspace', async () => {
-    const result = await callTool('workspaceSymbols', {});
+    const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
+    });
 
     assert.ok(!result.error, 'Should not have error');
 
@@ -61,6 +65,7 @@ suite('Workspace Symbols Basic Tests', () => {
 
   test('should respect maxFiles with default pattern', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       maxFiles: 3,
     });
 
@@ -72,9 +77,7 @@ suite('Workspace Symbols Basic Tests', () => {
   });
 
   test('should include various code file types', async () => {
-    const result = await callTool('workspaceSymbols', {
-      maxFiles: 100,
-    });
+    const result = await callTool('workspaceSymbols', { format: 'detailed', maxFiles: 100 });
 
     assert.ok(!result.error, 'Should not have error');
 

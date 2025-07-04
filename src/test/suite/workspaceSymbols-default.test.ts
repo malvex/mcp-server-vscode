@@ -14,7 +14,7 @@ suite('Workspace Symbols Default Pattern Tests', () => {
 
   test('should work without any parameters', async () => {
     // This is the main test - calling workspaceSymbols() with no params
-    const result = await callTool('workspaceSymbols', {});
+    const result = await callTool('workspaceSymbols', { format: 'detailed' });
 
     assert.ok(!result.error, `Should not have error: ${result.error}`);
     assert.ok(result.summary, 'Should have summary');
@@ -34,9 +34,7 @@ suite('Workspace Symbols Default Pattern Tests', () => {
 
   test('should not error with glob pattern syntax', async () => {
     // Ensure no nested brace expansion errors
-    const result = await callTool('workspaceSymbols', {
-      maxFiles: 10,
-    });
+    const result = await callTool('workspaceSymbols', { format: 'detailed', maxFiles: 10 });
 
     // Should not have glob parsing errors
     assert.ok(
@@ -50,9 +48,7 @@ suite('Workspace Symbols Default Pattern Tests', () => {
   });
 
   test('should find TypeScript files by default', async () => {
-    const result = await callTool('workspaceSymbols', {
-      maxFiles: 50,
-    });
+    const result = await callTool('workspaceSymbols', { format: 'detailed', maxFiles: 50 });
 
     assert.ok(!result.error, 'Should not have error');
 
@@ -66,9 +62,7 @@ suite('Workspace Symbols Default Pattern Tests', () => {
 
   test('should limit files correctly with default pattern', async () => {
     const maxFiles = 5;
-    const result = await callTool('workspaceSymbols', {
-      maxFiles: maxFiles,
-    });
+    const result = await callTool('workspaceSymbols', { format: 'detailed', maxFiles: maxFiles });
 
     assert.ok(!result.error, 'Should not have error');
 
@@ -80,9 +74,7 @@ suite('Workspace Symbols Default Pattern Tests', () => {
   });
 
   test('should find symbols in multiple language files', async () => {
-    const result = await callTool('workspaceSymbols', {
-      maxFiles: 100,
-    });
+    const result = await callTool('workspaceSymbols', { format: 'detailed', maxFiles: 100 });
 
     assert.ok(!result.error, 'Should not have error');
 

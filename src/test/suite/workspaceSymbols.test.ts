@@ -14,6 +14,7 @@ suite('Workspace Symbols Tool Tests', () => {
 
   test('should get all symbols from workspace', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.ts',
       maxFiles: 10, // Limit for testing
     });
@@ -42,6 +43,7 @@ suite('Workspace Symbols Tool Tests', () => {
 
   test('should respect file pattern filter', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/math.ts',
       includeDetails: true,
     });
@@ -87,6 +89,7 @@ suite('Workspace Symbols Tool Tests', () => {
 
   test('should work without details', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       includeDetails: false,
       filePattern: '**/math.ts',
     });
@@ -108,6 +111,7 @@ suite('Workspace Symbols Tool Tests', () => {
 
   test('should handle empty workspace gracefully', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/*.nonexistent',
     });
 

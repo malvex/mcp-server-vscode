@@ -111,6 +111,12 @@ export const workspaceSymbolsTool: Tool = {
         type: 'boolean',
         description: 'Include non-code files like HTML, JSON, Markdown (default: false)',
       },
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency, "detailed" for full data (default: "compact")',
+      },
     },
     required: [],
   },
@@ -121,6 +127,7 @@ export const workspaceSymbolsTool: Tool = {
       maxFiles = 1000,
       includeExternalSymbols = false,
       includeNonCodeFiles = false,
+      format = 'compact',
     } = args;
 
     try {
@@ -215,13 +222,21 @@ export const workspaceSymbolsTool: Tool = {
           const filePath = vscode.workspace.asRelativePath(fileUri);
 
           if (symbols && symbols.length > 0) {
-            symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
+            if (format === 'compact') {
+              symbolsByFile[filePath] = processDocumentSymbolsCompact(symbols);
+            } else {
+              symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
+            }
             totalSymbols += countSymbols(symbols);
           } else if (symbols === undefined || symbols === null) {
             // No language server available - try basic parsing for common languages
             const basicSymbols = await tryBasicSymbolExtraction(document);
             if (basicSymbols && basicSymbols.length > 0) {
-              symbolsByFile[filePath] = basicSymbols;
+              if (format === 'compact') {
+                symbolsByFile[filePath] = convertToCompactFormat(basicSymbols);
+              } else {
+                symbolsByFile[filePath] = basicSymbols;
+              }
               totalSymbols += basicSymbols.length;
             } else {
               skippedFiles++;
@@ -236,18 +251,26 @@ export const workspaceSymbolsTool: Tool = {
         }
       }
 
-      // Create a summary
-      const summary = {
-        totalFiles: Object.keys(symbolsByFile).length,
-        totalSymbols: totalSymbols,
-        byKind: countSymbolsByKind(symbolsByFile),
-        skippedFiles: skippedFiles,
-      };
+      // Return compact or detailed format
+      if (format === 'compact') {
+        return {
+          totalSymbols,
+          symbols: symbolsByFile,
+        };
+      } else {
+        // Detailed format with full summary
+        const summary = {
+          totalFiles: Object.keys(symbolsByFile).length,
+          totalSymbols: totalSymbols,
+          byKind: countSymbolsByKind(symbolsByFile),
+          skippedFiles: skippedFiles,
+        };
 
-      return {
-        summary,
-        files: symbolsByFile,
-      };
+        return {
+          summary,
+          files: symbolsByFile,
+        };
+      }
     } catch (error) {
       return {
         error: `Failed to get workspace symbols: ${error}`,
@@ -326,6 +349,37 @@ function countSymbolsByKind(symbolsByFile: Record<string, any[]>): Record<string
   }
 
   return counts;
+}
+
+// Process document symbols into compact format [name, kind, line]
+function processDocumentSymbolsCompact(
+  symbols: vscode.DocumentSymbol[],
+  parentPath: string = ''
+): any[] {
+  const results: any[] = [];
+
+  for (const symbol of symbols) {
+    const fullName = parentPath ? `${parentPath}.${symbol.name}` : symbol.name;
+
+    // Add the symbol as [name, kind, line]
+    results.push([fullName, vscode.SymbolKind[symbol.kind].toLowerCase(), symbol.range.start.line]);
+
+    // Process children recursively
+    if (symbol.children && symbol.children.length > 0) {
+      results.push(...processDocumentSymbolsCompact(symbol.children, fullName));
+    }
+  }
+
+  return results;
+}
+
+// Convert basic symbols to compact format
+function convertToCompactFormat(symbols: any[]): any[] {
+  return symbols.map((symbol) => [
+    symbol.fullName || symbol.name,
+    symbol.kind.toLowerCase(),
+    symbol.range.start.line,
+  ]);
 }
 
 // Basic symbol extraction for files without language server support

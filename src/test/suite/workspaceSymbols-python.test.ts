@@ -68,6 +68,7 @@ MY_CONSTANT = 42
 
       // Now try via our tool
       const result = await callTool('workspaceSymbols', {
+        format: 'detailed',
         filePattern: '**/test_symbols.py',
       });
 
@@ -110,7 +111,7 @@ MY_CONSTANT = 42
 
   test('should verify default behavior returns only files with symbols', async () => {
     // Call with no parameters
-    const result = await callTool('workspaceSymbols', {});
+    const result = await callTool('workspaceSymbols', { format: 'detailed' });
 
     assert.ok(!result.error, 'Should not have error');
     assert.ok(result.files, 'Should have files');

@@ -79,6 +79,7 @@ if __name__ == "__main__":
 
       // Call workspaceSymbols
       const result = await callTool('workspaceSymbols', {
+        format: 'detailed',
         filePattern: '**/test_fallback.py',
       });
 
@@ -157,6 +158,7 @@ if __name__ == "__main__":
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const result = await callTool('workspaceSymbols', {
+        format: 'detailed',
         filePattern: '**/test_indented.py',
       });
 

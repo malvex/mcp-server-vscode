@@ -108,6 +108,7 @@ hello()
 
   test('should not parse HTML files by default', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/test-noncode-files/*.html',
       maxFiles: 10,
     });
@@ -140,6 +141,7 @@ hello()
 
   test('should not parse non-code files by default when no pattern specified', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/test-noncode-files/*',
       maxFiles: 20,
     });
@@ -176,6 +178,7 @@ hello()
 
   test('should parse only code files with reasonable token count', async () => {
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/test-noncode-files/*.py',
       includeDetails: true,
     });
@@ -208,6 +211,7 @@ hello()
   test('should not generate massive tokens for HTML files', async () => {
     // Even if we explicitly request HTML files, they shouldn't generate thousands of symbols
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/test-noncode-files/*.html',
       includeDetails: false, // Even without details
       maxFiles: 1,
@@ -232,6 +236,7 @@ hello()
   test('should support opt-in for non-code files if needed', async () => {
     // Test that includeNonCodeFiles option exists and works
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/test-noncode-files/*',
       includeNonCodeFiles: true, // Hypothetical option
       maxFiles: 10,
@@ -247,6 +252,7 @@ hello()
   test('should handle mixed file types correctly', async () => {
     // When searching all files, should only process code files
     const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
       filePattern: '**/test-noncode-files/*',
       maxFiles: 50,
     });
