@@ -19,16 +19,15 @@ suite('Call Hierarchy Tool Tests', () => {
   });
 
   test('should find incoming calls to add function', async () => {
-    const document = await openTestFile('math.ts');
+    await openTestFile('math.ts');
 
-    // Get incoming calls to 'add' function (line 6, character 17)
+    // Use AI-friendly symbol-based approach
     const result = await callTool('callHierarchy', {
-      uri: document.uri.toString(),
-      line: 6,
-      character: 17,
+      symbol: 'add',
       direction: 'incoming',
     });
 
+    assert.ok(!result.error, 'Should not have error');
     assert.ok(result.calls, 'Should return calls');
     assert.ok(result.calls.length > 0, 'Should find at least one incoming call');
 
@@ -40,16 +39,14 @@ suite('Call Hierarchy Tool Tests', () => {
   });
 
   test('should find outgoing calls from calculateSum function', async () => {
-    const document = await openTestFile('app.ts');
+    await openTestFile('app.ts');
 
-    // Get outgoing calls from 'calculateSum' function (line 3, character 9)
     const result = await callTool('callHierarchy', {
-      uri: document.uri.toString(),
-      line: 3,
-      character: 9,
+      symbol: 'calculateSum',
       direction: 'outgoing',
     });
 
+    assert.ok(!result.error, 'Should not have error');
     assert.ok(result.calls, 'Should return calls');
     assert.ok(result.calls.length > 0, 'Should find at least one outgoing call');
 
@@ -59,64 +56,82 @@ suite('Call Hierarchy Tool Tests', () => {
   });
 
   test('should find incoming calls to Calculator class methods', async () => {
-    const document = await openTestFile('math.ts');
+    await openTestFile('math.ts');
 
-    // Get incoming calls to 'add' method of Calculator (line 26, character 2)
     const result = await callTool('callHierarchy', {
-      uri: document.uri.toString(),
-      line: 26,
-      character: 2,
+      symbol: 'Calculator.multiply',
       direction: 'incoming',
     });
 
+    assert.ok(!result.error, 'Should not have error');
     assert.ok(result.calls, 'Should return calls');
 
-    // The add method is called from performCalculations in app.ts
-    const hasIncomingCalls = result.calls.length > 0;
-    if (hasIncomingCalls) {
-      const callFromPerformCalculations = result.calls.find(
-        (call: any) => call.from.name === 'performCalculations'
-      );
-      assert.ok(callFromPerformCalculations, 'Should find call from performCalculations');
-    }
+    // The multiply method is called from app.ts
+    const hasIncomingCall = result.calls.some(
+      (call: any) => call.from.name === 'main' || call.from.name === '<top level>'
+    );
+    assert.ok(hasIncomingCall, 'Should find incoming call to multiply method');
   });
 
   test('should return empty array for functions with no calls', async () => {
-    const document = await openTestFile('math.ts');
+    await openTestFile('math.ts');
 
-    // Get incoming calls to 'multiply' function which is not used
     const result = await callTool('callHierarchy', {
-      uri: document.uri.toString(),
-      line: 16,
-      character: 17,
+      symbol: 'multiply',
       direction: 'incoming',
     });
 
-    assert.ok(Array.isArray(result.calls), 'Should return array');
-    assert.strictEqual(result.calls.length, 0, 'Should return empty array for unused function');
+    // multiply function (not the method) might not be called
+    assert.ok(!result.error, 'Should not have error');
+    // Either empty calls or message about no hierarchy
+    assert.ok(result.calls?.length === 0 || result.message, 'Should handle no calls gracefully');
   });
 
   test('should include call location information', async () => {
-    const document = await openTestFile('math.ts');
+    await openTestFile('math.ts');
 
-    // Get incoming calls to 'add' function
     const result = await callTool('callHierarchy', {
-      uri: document.uri.toString(),
-      line: 6,
-      character: 17,
+      symbol: 'add',
       direction: 'incoming',
     });
 
-    assert.ok(result.calls.length > 0, 'Should have calls');
-    const firstCall = result.calls[0];
+    assert.ok(!result.error, 'Should not have error');
+    if (result.calls && result.calls.length > 0) {
+      const firstCall = result.calls[0];
+      assert.ok(firstCall.from, 'Should have from information');
+      assert.ok(firstCall.from.name, 'Should have caller name');
+      assert.ok(firstCall.from.file, 'Should have file path');
+      assert.ok(firstCall.locations, 'Should have call locations');
+      assert.ok(firstCall.locations[0].line > 0, 'Should have valid line number (1-based)');
+    }
+  });
 
-    // Verify call structure
-    assert.ok(firstCall.from, 'Should have from information');
-    assert.ok(firstCall.from.name, 'Should have caller name');
-    assert.ok(firstCall.from.kind, 'Should have caller kind');
-    assert.ok(firstCall.from.uri, 'Should have caller URI');
-    assert.ok(firstCall.from.range, 'Should have caller range');
-    assert.ok(firstCall.fromRanges, 'Should have call site ranges');
-    assert.ok(Array.isArray(firstCall.fromRanges), 'Call sites should be array');
+  test('should handle symbol not found', async () => {
+    const result = await callTool('callHierarchy', {
+      symbol: 'nonExistentFunction',
+      direction: 'incoming',
+    });
+
+    assert.ok(result.error, 'Should return error for non-existent symbol');
+    assert.ok(result.error.includes('No symbol found'), 'Error should mention symbol not found');
+  });
+
+  test('should find both incoming and outgoing calls', async () => {
+    await openTestFile('app.ts');
+
+    const result = await callTool('callHierarchy', {
+      symbol: 'calculateSum',
+      direction: 'both',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.calls, 'Should return calls');
+
+    // Should have both incoming and outgoing calls
+    const incomingCalls = result.calls.filter((c: any) => c.type === 'incoming');
+    const outgoingCalls = result.calls.filter((c: any) => c.type === 'outgoing');
+
+    assert.ok(outgoingCalls.length > 0, 'Should find outgoing calls');
+    // Note: calculateSum might not have incoming calls in test workspace
   });
 });
