@@ -28,7 +28,7 @@ suite('Runtime Debug Tools Tests', () => {
 
   test('should handle pause/continue when no debug session', async () => {
     // Test pause
-    const pauseResult = await callTool('pauseExecution', {
+    const pauseResult = await callTool('debug_pauseExecution', {
       format: 'detailed',
     });
 
@@ -36,7 +36,7 @@ suite('Runtime Debug Tools Tests', () => {
     assert.ok(pauseResult.error.includes('No active debug session'), 'Should mention no session');
 
     // Test continue
-    const continueResult = await callTool('continueExecution', {
+    const continueResult = await callTool('debug_continueExecution', {
       format: 'detailed',
     });
 
@@ -49,21 +49,21 @@ suite('Runtime Debug Tools Tests', () => {
 
   test('should handle step controls when no debug session', async () => {
     // Test step over
-    const stepOverResult = await callTool('stepOver', {
+    const stepOverResult = await callTool('debug_stepOver', {
       format: 'detailed',
     });
 
     assert.ok(stepOverResult.error, 'Should have error when no session');
 
     // Test step into
-    const stepIntoResult = await callTool('stepInto', {
+    const stepIntoResult = await callTool('debug_stepInto', {
       format: 'detailed',
     });
 
     assert.ok(stepIntoResult.error, 'Should have error when no session');
 
     // Test step out
-    const stepOutResult = await callTool('stepOut', {
+    const stepOutResult = await callTool('debug_stepOut', {
       format: 'detailed',
     });
 
@@ -71,7 +71,7 @@ suite('Runtime Debug Tools Tests', () => {
   });
 
   test('should handle call stack when no debug session', async () => {
-    const result = await callTool('getCallStack', {
+    const result = await callTool('debug_getCallStack', {
       format: 'detailed',
     });
 
@@ -80,7 +80,7 @@ suite('Runtime Debug Tools Tests', () => {
   });
 
   test('should handle variable inspection when no debug session', async () => {
-    const result = await callTool('inspectVariables', {
+    const result = await callTool('debug_inspectVariables', {
       scope: 'locals',
       format: 'detailed',
     });
@@ -90,7 +90,7 @@ suite('Runtime Debug Tools Tests', () => {
   });
 
   test('should handle expression evaluation when no debug session', async () => {
-    const result = await callTool('evaluateExpression', {
+    const result = await callTool('debug_evaluateExpression', {
       expression: 'myVariable',
       format: 'detailed',
     });
@@ -100,7 +100,7 @@ suite('Runtime Debug Tools Tests', () => {
   });
 
   test('should validate expression parameter', async () => {
-    const result = await callTool('evaluateExpression', {
+    const result = await callTool('debug_evaluateExpression', {
       format: 'detailed',
     } as any);
 
@@ -114,7 +114,7 @@ suite('Runtime Debug Tools Tests', () => {
 
   test('should handle compact format for runtime tools', async () => {
     // Test compact error format
-    const result = await callTool('getCallStack', {
+    const result = await callTool('debug_getCallStack', {
       format: 'compact',
     });
 

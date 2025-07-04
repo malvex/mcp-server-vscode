@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const stepOutTool: Tool = {
-  name: 'stepOut',
+export const debug_stepOutTool: Tool = {
+  name: 'debug_stepOut',
   description: 'Step out of the current function and return to the caller',
   inputSchema: {
     type: 'object',

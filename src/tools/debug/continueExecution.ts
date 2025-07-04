@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const continueExecutionTool: Tool = {
-  name: 'continueExecution',
+export const debug_continueExecutionTool: Tool = {
+  name: 'debug_continueExecution',
   description: 'Continue execution from the current breakpoint or paused state',
   inputSchema: {
     type: 'object',

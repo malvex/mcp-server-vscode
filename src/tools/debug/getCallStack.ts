@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const getCallStackTool: Tool = {
-  name: 'getCallStack',
+export const debug_getCallStackTool: Tool = {
+  name: 'debug_getCallStack',
   description: 'Get the current call stack/stack trace from the paused debug session',
   inputSchema: {
     type: 'object',

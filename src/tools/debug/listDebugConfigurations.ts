@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const listDebugConfigurationsTool: Tool = {
-  name: 'listDebugConfigurations',
+export const debug_listConfigurationsTool: Tool = {
+  name: 'debug_listConfigurations',
   description: 'List available debug configurations from launch.json',
   inputSchema: {
     type: 'object',

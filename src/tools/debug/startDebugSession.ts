@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const startDebugSessionTool: Tool = {
-  name: 'startDebugSession',
+export const debug_startSessionTool: Tool = {
+  name: 'debug_startSession',
   description: 'Start a debug session using a configuration from launch.json',
   inputSchema: {
     type: 'object',

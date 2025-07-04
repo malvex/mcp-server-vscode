@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const stepOverTool: Tool = {
-  name: 'stepOver',
+export const debug_stepOverTool: Tool = {
+  name: 'debug_stepOver',
   description:
     'Step over the current line of code (execute current line without entering functions)',
   inputSchema: {

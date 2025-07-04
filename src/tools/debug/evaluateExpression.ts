@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const evaluateExpressionTool: Tool = {
-  name: 'evaluateExpression',
+export const debug_evaluateExpressionTool: Tool = {
+  name: 'debug_evaluateExpression',
   description: 'Evaluate an expression in the current debug context (REPL/watch functionality)',
   inputSchema: {
     type: 'object',

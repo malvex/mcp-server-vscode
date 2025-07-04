@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const debugStatusTool: Tool = {
-  name: 'debugStatus',
+export const debug_statusTool: Tool = {
+  name: 'debug_status',
   description: 'Get current debug session status and configuration information',
   inputSchema: {
     type: 'object',

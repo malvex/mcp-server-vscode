@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import { Tool } from '../types';
 import { findSymbolInWorkspace } from '../utils/symbolProvider';
 
-export const toggleBreakpointTool: Tool = {
-  name: 'toggleBreakpoint',
+export const debug_toggleBreakpointTool: Tool = {
+  name: 'debug_toggleBreakpoint',
   description: 'Toggle a breakpoint on/off at a symbol or file/line location',
   inputSchema: {
     type: 'object',

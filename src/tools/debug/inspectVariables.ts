@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const inspectVariablesTool: Tool = {
-  name: 'inspectVariables',
+export const debug_inspectVariablesTool: Tool = {
+  name: 'debug_inspectVariables',
   description: 'Inspect variables in the current scope (locals, globals, etc.) during debugging',
   inputSchema: {
     type: 'object',

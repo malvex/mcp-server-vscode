@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const clearBreakpointsTool: Tool = {
-  name: 'clearBreakpoints',
+export const debug_clearBreakpointsTool: Tool = {
+  name: 'debug_clearBreakpoints',
   description: 'Remove all breakpoints from the workspace',
   inputSchema: {
     type: 'object',

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const pauseExecutionTool: Tool = {
-  name: 'pauseExecution',
+export const debug_pauseExecutionTool: Tool = {
+  name: 'debug_pauseExecution',
   description: 'Pause the running debug session at the current execution point',
   inputSchema: {
     type: 'object',

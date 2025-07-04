@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const stepIntoTool: Tool = {
-  name: 'stepInto',
+export const debug_stepIntoTool: Tool = {
+  name: 'debug_stepInto',
   description: 'Step into function calls on the current line',
   inputSchema: {
     type: 'object',

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const listBreakpointsTool: Tool = {
-  name: 'listBreakpoints',
+export const debug_listBreakpointsTool: Tool = {
+  name: 'debug_listBreakpoints',
   description: 'List all current breakpoints in the workspace',
   inputSchema: {
     type: 'object',

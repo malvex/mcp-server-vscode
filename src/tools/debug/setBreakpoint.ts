@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import { Tool } from '../types';
 import { findSymbolInWorkspace } from '../utils/symbolProvider';
 
-export const setBreakpointTool: Tool = {
-  name: 'setBreakpoint',
+export const debug_setBreakpointTool: Tool = {
+  name: 'debug_setBreakpoint',
   description: 'Set a breakpoint by symbol name or file/line with optional conditions',
   inputSchema: {
     type: 'object',

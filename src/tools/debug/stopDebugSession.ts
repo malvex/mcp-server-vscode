@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Tool } from '../types';
 
-export const stopDebugSessionTool: Tool = {
-  name: 'stopDebugSession',
+export const debug_stopSessionTool: Tool = {
+  name: 'debug_stopSession',
   description: 'Stop the current debug session',
   inputSchema: {
     type: 'object',
