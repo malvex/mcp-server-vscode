@@ -82,16 +82,11 @@ MY_CONSTANT = 42
       if (pythonFile) {
         const fileSymbols = result.files[pythonFile];
         console.log('File symbols:', fileSymbols);
-        // With fallback parser, we should now extract symbols from Python files
-        assert.ok(Array.isArray(fileSymbols), 'Should have symbols array');
-        assert.ok(fileSymbols.length > 0, 'Should have extracted symbols with fallback parser');
-
-        // Check that we found the expected symbols
-        const symbolNames = fileSymbols.map((s: any) => s.name);
-        assert.ok(symbolNames.includes('hello_world'), 'Should find hello_world function');
-        assert.ok(symbolNames.includes('Calculator'), 'Should find Calculator class');
+        // Without language server, this shouldn't happen unless Python extension is installed
+        assert.fail('Python file should be skipped when no language server is available');
       } else {
-        assert.fail('Python file should be included with fallback parser');
+        console.log('Good: Python file was skipped because no language server is available');
+        assert.ok(result.summary.skippedFiles > 0, 'Should have skipped files');
       }
     } finally {
       // Clean up
@@ -135,6 +130,64 @@ MY_CONSTANT = 42
     // Log a few examples
     for (const [file, symbols] of Object.entries(result.files).slice(0, 3)) {
       console.log(`${file}: ${(symbols as any[]).length} symbols`);
+    }
+  });
+
+  test('should wait for language server when waitForLanguageServer is true', async () => {
+    // Create a temporary TypeScript file
+    const workspaceUri = vscode.workspace.workspaceFolders![0].uri;
+    const testFileUri = vscode.Uri.joinPath(workspaceUri, 'test_wait.ts');
+    const content = `
+export function testFunction() {
+  console.log('test');
+}
+
+export class TestClass {
+  method() {
+    return true;
+  }
+}
+`;
+    await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content));
+
+    try {
+      // First try without waiting - might get no symbols if language server is not ready
+      const resultNoWait = await callTool('workspaceSymbols', {
+        format: 'detailed',
+        filePattern: '**/test_wait.ts',
+        waitForLanguageServer: false,
+      });
+
+      // Then try with waiting - should get symbols
+      const resultWithWait = await callTool('workspaceSymbols', {
+        format: 'detailed',
+        filePattern: '**/test_wait.ts',
+        waitForLanguageServer: true,
+      });
+
+      console.log('Without wait - skipped files:', resultNoWait.summary?.skippedFiles || 0);
+      console.log('With wait - skipped files:', resultWithWait.summary?.skippedFiles || 0);
+
+      // With wait should have found the symbols
+      const testFile = Object.keys(resultWithWait.files || {}).find((f) =>
+        f.includes('test_wait.ts')
+      );
+      if (testFile) {
+        const symbols = resultWithWait.files[testFile];
+        assert.ok(symbols.length >= 2, 'Should find at least 2 symbols (function and class)');
+
+        const symbolNames = symbols.map((s: any) => s.name);
+        assert.ok(symbolNames.includes('testFunction'), 'Should find testFunction');
+        assert.ok(symbolNames.includes('TestClass'), 'Should find TestClass');
+      } else {
+        // TypeScript language server should always be available in VS Code
+        console.warn(
+          'TypeScript file was skipped even with wait - language server might be disabled'
+        );
+      }
+    } finally {
+      // Clean up
+      await vscode.workspace.fs.delete(testFileUri);
     }
   });
 });

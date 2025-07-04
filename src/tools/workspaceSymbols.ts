@@ -117,6 +117,11 @@ export const workspaceSymbolsTool: Tool = {
         description:
           'Output format: "compact" for AI/token efficiency, "detailed" for full data (default: "compact")',
       },
+      waitForLanguageServer: {
+        type: 'boolean',
+        description:
+          'Wait up to 5 seconds for language servers to initialize on cold start (default: false)',
+      },
     },
     required: [],
   },
@@ -128,6 +133,7 @@ export const workspaceSymbolsTool: Tool = {
       includeExternalSymbols = false,
       includeNonCodeFiles = false,
       format = 'compact',
+      waitForLanguageServer = false,
     } = args;
 
     try {
@@ -214,12 +220,41 @@ export const workspaceSymbolsTool: Tool = {
           }
 
           // Get all symbols in this document
-          const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+          let symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
             'vscode.executeDocumentSymbolProvider',
             document.uri
           );
 
           const filePath = vscode.workspace.asRelativePath(fileUri);
+
+          // Handle cold start: retry if symbols are null/undefined and waitForLanguageServer is true
+          if ((symbols === undefined || symbols === null) && waitForLanguageServer) {
+            const knownLanguages = [
+              'typescript',
+              'javascript',
+              'python',
+              'java',
+              'csharp',
+              'go',
+              'rust',
+            ];
+            if (knownLanguages.includes(document.languageId)) {
+              console.log(`Language server not ready for ${document.languageId}, waiting...`);
+
+              // Try up to 5 times with 1 second delay
+              for (let retry = 0; retry < 5; retry++) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+                  'vscode.executeDocumentSymbolProvider',
+                  document.uri
+                );
+                if (symbols !== undefined && symbols !== null) {
+                  console.log(`Language server ready after ${retry + 1} seconds`);
+                  break;
+                }
+              }
+            }
+          }
 
           if (symbols && symbols.length > 0) {
             if (format === 'compact') {
@@ -229,18 +264,22 @@ export const workspaceSymbolsTool: Tool = {
             }
             totalSymbols += countSymbols(symbols);
           } else if (symbols === undefined || symbols === null) {
-            // No language server available - try basic parsing for common languages
-            const basicSymbols = await tryBasicSymbolExtraction(document);
-            if (basicSymbols && basicSymbols.length > 0) {
-              if (format === 'compact') {
-                symbolsByFile[filePath] = convertToCompactFormat(basicSymbols);
-              } else {
-                symbolsByFile[filePath] = basicSymbols;
-              }
-              totalSymbols += basicSymbols.length;
-            } else {
-              skippedFiles++;
+            // Language server still not ready after retries
+            const knownLanguages = [
+              'typescript',
+              'javascript',
+              'python',
+              'java',
+              'csharp',
+              'go',
+              'rust',
+            ];
+            if (knownLanguages.includes(document.languageId)) {
+              console.warn(
+                `Language server not ready for ${document.languageId} file: ${filePath} - skipping`
+              );
             }
+            skippedFiles++;
           } else {
             // Empty array means file was parsed but has no symbols - skip it
             skippedFiles++;
@@ -371,96 +410,4 @@ function processDocumentSymbolsCompact(
   }
 
   return results;
-}
-
-// Convert basic symbols to compact format
-function convertToCompactFormat(symbols: any[]): any[] {
-  return symbols.map((symbol) => [
-    symbol.fullName || symbol.name,
-    symbol.kind.toLowerCase(),
-    symbol.range.start.line,
-  ]);
-}
-
-// Basic symbol extraction for files without language server support
-async function tryBasicSymbolExtraction(document: vscode.TextDocument): Promise<any[] | null> {
-  const languageId = document.languageId;
-  const text = document.getText();
-  const symbols: any[] = [];
-
-  if (languageId === 'python') {
-    // Basic Python symbol extraction
-    const lines = text.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmedLine = line.trim();
-
-      // Skip empty lines and comments
-      if (!trimmedLine || trimmedLine.startsWith('#')) {
-        continue;
-      }
-
-      // Calculate indentation level
-      const indent = line.length - trimmedLine.length;
-      const isTopLevel = indent === 0;
-
-      // Match class definitions (any indentation level)
-      const classMatch = trimmedLine.match(/^class\s+(\w+)(?:\(.*?\))?:/);
-      if (classMatch) {
-        symbols.push({
-          name: classMatch[1],
-          kind: 'Class',
-          fullName: classMatch[1],
-          range: {
-            start: { line: i, character: indent },
-            end: { line: i, character: line.length },
-          },
-        });
-      }
-
-      // Match function definitions (any indentation level)
-      const funcMatch = trimmedLine.match(/^def\s+(\w+)\s*\(/);
-      if (funcMatch) {
-        // Only include top-level functions and class methods (indent <= 4)
-        if (isTopLevel || indent <= 4) {
-          symbols.push({
-            name: funcMatch[1],
-            kind: isTopLevel ? 'Function' : 'Method',
-            fullName: funcMatch[1],
-            range: {
-              start: { line: i, character: indent },
-              end: { line: i, character: line.length },
-            },
-          });
-        }
-      }
-
-      // Match top-level variables (simple assignment)
-      if (isTopLevel) {
-        const varMatch = trimmedLine.match(/^(\w+)\s*=\s*(.+)$/);
-        if (varMatch) {
-          const varName = varMatch[1];
-          // Include constants (UPPER_CASE) and early module variables
-          if (varName === varName.toUpperCase() && varName.length > 1) {
-            symbols.push({
-              name: varName,
-              kind: 'Variable',
-              fullName: varName,
-              range: {
-                start: { line: i, character: 0 },
-                end: { line: i, character: line.length },
-              },
-            });
-          }
-        }
-      }
-    }
-
-    return symbols.length > 0 ? symbols : null;
-  }
-
-  // Add more basic parsers for other languages as needed
-
-  return null;
 }
