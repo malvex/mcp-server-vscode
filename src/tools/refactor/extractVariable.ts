@@ -78,7 +78,7 @@ export const refactor_extractVariableTool: Tool = {
         'vscode.executeCodeActionProvider',
         fileUri,
         selection,
-        vscode.CodeActionKind.RefactorExtract
+        vscode.CodeActionKind.RefactorExtract.value
       );
 
       if (!codeActions || codeActions.length === 0) {
