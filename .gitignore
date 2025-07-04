@@ -5,3 +5,6 @@ node_modules
 *.vsix
 .DS_Store
 *.log
+.vscode-test-web/
+test-results/
+coverage/
