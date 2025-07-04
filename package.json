@@ -33,7 +33,7 @@
       "properties": {
         "vscode-mcp.port": {
           "type": "number",
-          "default": 3000,
+          "default": 8991,
           "description": "Port for the MCP server"
         }
       }

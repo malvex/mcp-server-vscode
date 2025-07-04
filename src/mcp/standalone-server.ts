@@ -9,7 +9,7 @@ const {
 } = require('@modelcontextprotocol/sdk/dist/cjs/types.js');
 const http = require('http');
 
-const VSCODE_BRIDGE_PORT = process.env.VSCODE_BRIDGE_PORT || '3000';
+const VSCODE_BRIDGE_PORT = process.env.VSCODE_BRIDGE_PORT || '8991';
 
 const server = new Server(
   {

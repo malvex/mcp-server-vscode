@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const config = vscode.workspace.getConfiguration('vscode-mcp');
-    const port = config.get<number>('port', 3000);
+    const port = config.get<number>('port', 8991);
 
     try {
       // Start HTTP bridge for VS Code API access
