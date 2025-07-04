@@ -19,15 +19,11 @@ export const definitionTool: Tool = {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
     const position = new vscode.Position(line, character);
 
-    console.log(`[definition] Looking for definition at ${uri} line ${line}, char ${character}`);
-
     const definitions = await vscode.commands.executeCommand<vscode.Location[]>(
       'vscode.executeDefinitionProvider',
       document.uri,
       position
     );
-
-    console.log(`[definition] Found ${definitions?.length || 0} definitions`);
 
     if (!definitions || definitions.length === 0) {
       return { definitions: [] };

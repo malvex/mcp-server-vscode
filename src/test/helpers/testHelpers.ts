@@ -87,8 +87,6 @@ export async function callTool(toolName: string, args: any, port: number = 3001)
       res.on('data', (chunk) => (responseData += chunk));
       res.on('end', () => {
         try {
-          console.log(`[callTool] Response status: ${res.statusCode}, data: ${responseData}`);
-
           if (!responseData) {
             reject(new Error('Empty response from HTTP bridge'));
             return;
