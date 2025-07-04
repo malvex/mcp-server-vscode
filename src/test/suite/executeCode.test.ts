@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { setupTest, teardownTest, callTool, TestContext } from '../helpers/testHelpers';
 
-suite('Execute Code Tool Tests', () => {
+suite.skip('Execute Code Tool Tests (tool disabled)', () => {
   let context: TestContext;
   const terminalDisposables: vscode.Disposable[] = [];
 

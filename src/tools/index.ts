@@ -6,7 +6,7 @@ import { referencesTool } from './references';
 import { debugTool } from './debug';
 import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
-import { executeCodeTool } from './executeCode';
+// import { executeCodeTool } from './executeCode';  // Commented out - redundant tool
 import { workspaceSymbolsTool } from './workspaceSymbols';
 
 export function getTools(): Tool[] {
@@ -18,7 +18,7 @@ export function getTools(): Tool[] {
     debugTool,
     callHierarchyTool,
     symbolSearchTool,
-    executeCodeTool,
+    // executeCodeTool,  // Commented out - redundant tool
     workspaceSymbolsTool,
   ];
 }
