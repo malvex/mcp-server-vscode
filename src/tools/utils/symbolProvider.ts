@@ -48,9 +48,21 @@ export async function searchWorkspaceSymbols(
 
   // If no results and we haven't retried yet, the language server might still be initializing
   if ((!symbols || symbols.length === 0) && maxRetries > 0) {
+    // Instead of blind retries, check if language server is actually processing
     for (let retry = 0; retry < Math.min(maxRetries, retryDelays.length); retry++) {
-      await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
+      // Check if we can get any symbols at all (empty query returns all symbols)
+      const allSymbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+        'vscode.executeWorkspaceSymbolProvider',
+        ''
+      );
 
+      // If we can't get any symbols, language server isn't ready yet
+      if (!allSymbols || allSymbols.length === 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
+        continue;
+      }
+
+      // Language server is ready, try our specific query again
       symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
         'vscode.executeWorkspaceSymbolProvider',
         query
