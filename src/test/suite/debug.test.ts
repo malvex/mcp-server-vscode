@@ -25,11 +25,34 @@ suite('Debug Tool Tests', () => {
     }
   });
 
-  test('should set a breakpoint', async () => {
+  test('should set a breakpoint by symbol name', async () => {
+    // Clear all breakpoints first
+    vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
+
+    // Set breakpoint using symbol name (AI-friendly approach)
+    const result = await callTool('debug', {
+      format: 'detailed',
+      action: 'setBreakpoint',
+      symbol: 'calculateSum',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.status, 'Should return status');
+    assert.strictEqual(result.status, 'Breakpoint added', 'Should confirm breakpoint added');
+    assert.ok(result.symbol, 'Should include symbol name');
+    assert.ok(typeof result.line === 'number', 'Should return line number');
+
+    // Verify breakpoint was actually added
+    const breakpoints = vscode.debug.breakpoints;
+    assert.ok(breakpoints.length > 0, 'Should have at least one breakpoint');
+  });
+
+  test('should set a breakpoint by position', async () => {
     const document = await openTestFile('app.ts');
 
     // Set breakpoint on line 5 (calculateSum function)
     const result = await callTool('debug', {
+      format: 'detailed',
       action: 'setBreakpoint',
       uri: document.uri.toString(),
       line: 4, // 0-based line number
@@ -61,6 +84,7 @@ suite('Debug Tool Tests', () => {
 
     // First set a breakpoint
     await callTool('debug', {
+      format: 'detailed',
       action: 'setBreakpoint',
       uri: document.uri.toString(),
       line: 10,
@@ -68,6 +92,7 @@ suite('Debug Tool Tests', () => {
 
     // Then remove it
     const result = await callTool('debug', {
+      format: 'detailed',
       action: 'removeBreakpoint',
       uri: document.uri.toString(),
       line: 10,
@@ -94,13 +119,14 @@ suite('Debug Tool Tests', () => {
   test('should handle setBreakpoint without required parameters', async () => {
     try {
       await callTool('debug', {
+        format: 'detailed',
         action: 'setBreakpoint',
         // Missing uri and line
       });
       assert.fail('Should throw error for missing parameters');
     } catch (error: any) {
       assert.ok(
-        error.message.includes('URI and line required'),
+        error.message.includes('Either provide a symbol name OR uri with line'),
         'Should mention missing parameters'
       );
     }
@@ -109,13 +135,14 @@ suite('Debug Tool Tests', () => {
   test('should handle removeBreakpoint without required parameters', async () => {
     try {
       await callTool('debug', {
+        format: 'detailed',
         action: 'removeBreakpoint',
         // Missing uri and line
       });
       assert.fail('Should throw error for missing parameters');
     } catch (error: any) {
       assert.ok(
-        error.message.includes('URI and line required'),
+        error.message.includes('Either provide a symbol name OR uri with line'),
         'Should mention missing parameters'
       );
     }
@@ -125,6 +152,7 @@ suite('Debug Tool Tests', () => {
     // This test is skipped because it requires launch.json configuration
     // and actually starts a debug session which may interfere with tests
     const result = await callTool('debug', {
+      format: 'detailed',
       action: 'start',
     });
 
@@ -135,6 +163,7 @@ suite('Debug Tool Tests', () => {
   test.skip('should stop debug session', async () => {
     // This test is skipped because it requires an active debug session
     const result = await callTool('debug', {
+      format: 'detailed',
       action: 'stop',
     });
 
@@ -145,6 +174,7 @@ suite('Debug Tool Tests', () => {
   test('should handle unknown debug action', async () => {
     try {
       await callTool('debug', {
+        format: 'detailed',
         action: 'unknownAction',
       });
       assert.fail('Should throw error for unknown action');
@@ -155,6 +185,7 @@ suite('Debug Tool Tests', () => {
 
   test('should indicate getVariables is not implemented', async () => {
     const result = await callTool('debug', {
+      format: 'detailed',
       action: 'getVariables',
     });
 

@@ -22,16 +22,29 @@ export const debugTool: Tool = {
         ],
         description: 'Debug action to perform',
       },
-      // For setBreakpoint/removeBreakpoint
+      // Symbol-based approach (AI-friendly)
+      symbol: {
+        type: 'string',
+        description: 'Symbol name for breakpoint (e.g., "functionName", "ClassName.methodName")',
+      },
+      // Position-based approach (kept for backward compatibility)
       uri: { type: 'string', description: 'File URI for breakpoint operations' },
       line: { type: 'number', description: 'Line number for breakpoint (0-based)' },
       // For start action
       config: { type: 'object', description: 'Debug configuration to use' },
+      // Output format
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency (default), "detailed" for full data',
+        default: 'compact',
+      },
     },
     required: ['action'],
   },
   handler: async (args) => {
-    const { action, uri, line, config } = args;
+    const { action, symbol, uri, line, config, format = 'compact' } = args;
 
     switch (action) {
       case 'start':
@@ -46,21 +59,54 @@ export const debugTool: Tool = {
             throw new Error('No debug configurations found');
           }
         }
-        return { status: 'Debug session started' };
+        return format === 'compact' ? { action: 'started' } : { status: 'Debug session started' };
 
       case 'stop':
         await vscode.debug.stopDebugging();
-        return { status: 'Debug session stopped' };
+        return format === 'compact' ? { action: 'stopped' } : { status: 'Debug session stopped' };
 
       case 'setBreakpoint':
-        if (!uri || line === undefined) {
-          throw new Error('URI and line required for setting breakpoint');
+        if (symbol) {
+          // AI-friendly symbol-based approach
+          const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+            'vscode.executeWorkspaceSymbolProvider',
+            symbol.split('.').pop()!
+          );
+
+          if (!symbols || symbols.length === 0) {
+            return format === 'compact'
+              ? { error: 'not_found', symbol }
+              : { error: `Symbol '${symbol}' not found` };
+          }
+
+          // Find exact match
+          const match = symbols.find(
+            (s) => s.name === symbol || s.name === symbol.split('.').pop()
+          );
+          if (match) {
+            const breakpoint = new vscode.SourceBreakpoint(
+              new vscode.Location(match.location.uri, match.location.range.start)
+            );
+            vscode.debug.addBreakpoints([breakpoint]);
+            return format === 'compact'
+              ? {
+                  action: 'added',
+                  location: [match.location.uri.toString(), match.location.range.start.line],
+                }
+              : { status: 'Breakpoint added', symbol, line: match.location.range.start.line };
+          }
+        } else if (uri && line !== undefined) {
+          // Position-based approach (backward compatibility)
+          const fileUri = vscode.Uri.parse(uri);
+          const location = new vscode.Location(fileUri, new vscode.Position(line, 0));
+          const breakpoint = new vscode.SourceBreakpoint(location);
+          vscode.debug.addBreakpoints([breakpoint]);
+          return format === 'compact'
+            ? { action: 'added', location: [uri, line] }
+            : { status: 'Breakpoint added', line };
+        } else {
+          throw new Error('Either provide a symbol name OR uri with line');
         }
-        const fileUri = vscode.Uri.parse(uri);
-        const location = new vscode.Location(fileUri, new vscode.Position(line, 0));
-        const breakpoint = new vscode.SourceBreakpoint(location);
-        vscode.debug.addBreakpoints([breakpoint]);
-        return { status: 'Breakpoint added', line };
 
       case 'removeBreakpoint':
         if (!uri || line === undefined) {
@@ -78,31 +124,35 @@ export const debugTool: Tool = {
           return false;
         });
         vscode.debug.removeBreakpoints(toRemove);
-        return { status: 'Breakpoint removed', line };
+        return format === 'compact'
+          ? { action: 'removed', location: [uri, line] }
+          : { status: 'Breakpoint removed', line };
 
       case 'stepOver':
         await vscode.commands.executeCommand('workbench.action.debug.stepOver');
-        return { status: 'Stepped over' };
+        return format === 'compact' ? { action: 'step_over' } : { status: 'Stepped over' };
 
       case 'stepInto':
         await vscode.commands.executeCommand('workbench.action.debug.stepInto');
-        return { status: 'Stepped into' };
+        return format === 'compact' ? { action: 'step_into' } : { status: 'Stepped into' };
 
       case 'stepOut':
         await vscode.commands.executeCommand('workbench.action.debug.stepOut');
-        return { status: 'Stepped out' };
+        return format === 'compact' ? { action: 'step_out' } : { status: 'Stepped out' };
 
       case 'continue':
         await vscode.commands.executeCommand('workbench.action.debug.continue');
-        return { status: 'Continued execution' };
+        return format === 'compact' ? { action: 'continue' } : { status: 'Continued execution' };
 
       case 'getVariables':
         // This is more complex and would require access to the debug session
         // For now, return a placeholder
-        return {
-          status: 'Variable inspection not yet implemented',
-          note: 'This requires deeper integration with the debug adapter protocol',
-        };
+        return format === 'compact'
+          ? { error: 'not_implemented' }
+          : {
+              status: 'Variable inspection not yet implemented',
+              note: 'This requires deeper integration with the debug adapter protocol',
+            };
 
       default:
         throw new Error(`Unknown debug action: ${action}`);

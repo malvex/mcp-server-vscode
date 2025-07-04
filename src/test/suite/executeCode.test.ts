@@ -26,6 +26,7 @@ suite('Execute Code Tool Tests', () => {
 
   test('should send command to terminal', async () => {
     const result = await callTool('executeCode', {
+      format: 'detailed',
       command: 'echo "Hello from test"',
     });
 
@@ -46,6 +47,7 @@ suite('Execute Code Tool Tests', () => {
     const initialTerminalCount = vscode.window.terminals.length;
 
     const result = await callTool('executeCode', {
+      format: 'detailed',
       command: 'pwd',
     });
 
@@ -65,6 +67,7 @@ suite('Execute Code Tool Tests', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const result = await callTool('executeCode', {
+      format: 'detailed',
       command: 'ls -la',
       cwd: '/tmp',
     });
@@ -75,6 +78,7 @@ suite('Execute Code Tool Tests', () => {
 
   test('should handle waitForOutput flag', async () => {
     const result = await callTool('executeCode', {
+      format: 'detailed',
       command: 'echo "test output"',
       waitForOutput: true,
     });
@@ -90,6 +94,7 @@ suite('Execute Code Tool Tests', () => {
 
   test('should handle empty command', async () => {
     const result = await callTool('executeCode', {
+      format: 'detailed',
       command: '',
     });
 
@@ -102,6 +107,7 @@ suite('Execute Code Tool Tests', () => {
     const complexCommand = 'npm test -- --grep "test pattern" && echo "Done"';
 
     const result = await callTool('executeCode', {
+      format: 'detailed',
       command: complexCommand,
     });
 
@@ -112,6 +118,7 @@ suite('Execute Code Tool Tests', () => {
   test.skip('should create terminal with specific name', async () => {
     // Skip because terminal disposal issues in test environment
     await callTool('executeCode', {
+      format: 'detailed',
       command: 'echo "MCP test"',
     });
 
