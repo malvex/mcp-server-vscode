@@ -235,7 +235,7 @@ export const workspaceSymbolsTool: Tool = {
             if (knownLanguages.includes(document.languageId)) {
               // Silently retry a few times for known languages
               for (let retry = 0; retry < 3; retry++) {
-                await new Promise((resolve) => setTimeout(resolve, 500));
+                await new Promise((resolve) => setTimeout(resolve, 1000));
                 symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
                   'vscode.executeDocumentSymbolProvider',
                   document.uri
