@@ -217,10 +217,17 @@ export const workspaceSymbolsTool: Tool = {
           if (symbols && symbols.length > 0) {
             symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
             totalSymbols += countSymbols(symbols);
+          } else if (symbols === undefined || symbols === null) {
+            // No language server available - try basic parsing for common languages
+            const basicSymbols = await tryBasicSymbolExtraction(document);
+            if (basicSymbols && basicSymbols.length > 0) {
+              symbolsByFile[filePath] = basicSymbols;
+              totalSymbols += basicSymbols.length;
+            } else {
+              skippedFiles++;
+            }
           } else {
-            // Skip files with no symbols - they just clutter the output
-            // VS Code returns empty array when it can parse but finds no symbols
-            // VS Code returns undefined/null when no language server is available
+            // Empty array means file was parsed but has no symbols - skip it
             skippedFiles++;
           }
         } catch (error) {
@@ -319,4 +326,87 @@ function countSymbolsByKind(symbolsByFile: Record<string, any[]>): Record<string
   }
 
   return counts;
+}
+
+// Basic symbol extraction for files without language server support
+async function tryBasicSymbolExtraction(document: vscode.TextDocument): Promise<any[] | null> {
+  const languageId = document.languageId;
+  const text = document.getText();
+  const symbols: any[] = [];
+
+  if (languageId === 'python') {
+    // Basic Python symbol extraction
+    const lines = text.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Skip empty lines and comments
+      if (!trimmedLine || trimmedLine.startsWith('#')) {
+        continue;
+      }
+
+      // Calculate indentation level
+      const indent = line.length - trimmedLine.length;
+      const isTopLevel = indent === 0;
+
+      // Match class definitions (any indentation level)
+      const classMatch = trimmedLine.match(/^class\s+(\w+)(?:\(.*?\))?:/);
+      if (classMatch) {
+        symbols.push({
+          name: classMatch[1],
+          kind: 'Class',
+          fullName: classMatch[1],
+          range: {
+            start: { line: i, character: indent },
+            end: { line: i, character: line.length },
+          },
+        });
+      }
+
+      // Match function definitions (any indentation level)
+      const funcMatch = trimmedLine.match(/^def\s+(\w+)\s*\(/);
+      if (funcMatch) {
+        // Only include top-level functions and class methods (indent <= 4)
+        if (isTopLevel || indent <= 4) {
+          symbols.push({
+            name: funcMatch[1],
+            kind: isTopLevel ? 'Function' : 'Method',
+            fullName: funcMatch[1],
+            range: {
+              start: { line: i, character: indent },
+              end: { line: i, character: line.length },
+            },
+          });
+        }
+      }
+
+      // Match top-level variables (simple assignment)
+      if (isTopLevel) {
+        const varMatch = trimmedLine.match(/^(\w+)\s*=\s*(.+)$/);
+        if (varMatch) {
+          const varName = varMatch[1];
+          // Include constants (UPPER_CASE) and early module variables
+          if (varName === varName.toUpperCase() && varName.length > 1) {
+            symbols.push({
+              name: varName,
+              kind: 'Variable',
+              fullName: varName,
+              range: {
+                start: { line: i, character: 0 },
+                end: { line: i, character: line.length },
+              },
+            });
+          }
+        }
+      }
+    }
+
+    return symbols.length > 0 ? symbols : null;
+  }
+
+  // Add more basic parsers for other languages as needed
+
+  return null;
 }
