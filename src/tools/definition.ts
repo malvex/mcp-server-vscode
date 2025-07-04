@@ -4,21 +4,15 @@ import { searchWorkspaceSymbols, getDocumentSymbols } from './utils/symbolProvid
 
 export const definitionTool: Tool = {
   name: 'definition',
-  description: 'Find the definition of a symbol by name or at a specific position',
+  description: 'Find the definition of a symbol by name',
   inputSchema: {
     type: 'object',
     properties: {
-      // Symbol-based approach (AI-friendly)
       symbol: {
         type: 'string',
         description:
           'Symbol name to find definition for (e.g., "functionName", "ClassName", "ClassName.methodName")',
       },
-
-      // Position-based approach (kept for backward compatibility)
-      uri: { type: 'string', description: 'File URI (required for position-based lookup)' },
-      line: { type: 'number', description: 'Line number (0-based, required with uri)' },
-      character: { type: 'number', description: 'Character position (0-based, required with uri)' },
       format: {
         type: 'string',
         enum: ['compact', 'detailed'],
@@ -27,108 +21,15 @@ export const definitionTool: Tool = {
         default: 'compact',
       },
     },
-    required: [], // Make all optional, but validate in handler
+    required: ['symbol'],
   },
   handler: async (args) => {
-    const { symbol, uri, line, character, format = 'compact' } = args;
-
-    // Decide which approach to use
-    if (symbol) {
-      // AI-friendly symbol-based approach
-      return await findDefinitionBySymbol(symbol, format);
-    } else if (uri !== undefined && line !== undefined && character !== undefined) {
-      // Position-based approach
-      return await findDefinitionByPosition(uri, line, character, format);
-    } else {
-      return {
-        error: 'Either provide a symbol name OR uri with line and character position',
-      };
-    }
+    const { symbol, format = 'compact' } = args;
+    return await findDefinitionBySymbol(symbol, format);
   },
 };
 
-// Helper function for position-based lookup
-async function findDefinitionByPosition(
-  uri: string,
-  line: number,
-  character: number,
-  format: 'compact' | 'detailed'
-): Promise<any> {
-  const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
-  const position = new vscode.Position(line, character);
-
-  const definitions = await vscode.commands.executeCommand<
-    (vscode.Location | vscode.LocationLink)[]
-  >('vscode.executeDefinitionProvider', document.uri, position);
-
-  if (!definitions || definitions.length === 0) {
-    return { definitions: [] };
-  }
-
-  // Handle both Location and LocationLink formats
-  const normalized = definitions
-    .map((def) => {
-      if (format === 'compact') {
-        if ('targetUri' in def) {
-          // It's a LocationLink
-          return [
-            def.targetUri.toString(),
-            def.targetRange.start.line,
-            def.targetRange.start.character,
-            def.targetRange.end.line,
-            def.targetRange.end.character,
-          ];
-        } else if ('uri' in def) {
-          // It's a Location
-          return [
-            def.uri.toString(),
-            def.range.start.line,
-            def.range.start.character,
-            def.range.end.line,
-            def.range.end.character,
-          ];
-        }
-      } else {
-        if ('targetUri' in def) {
-          // It's a LocationLink
-          return {
-            uri: def.targetUri.toString(),
-            range: {
-              start: {
-                line: def.targetRange.start.line,
-                character: def.targetRange.start.character,
-              },
-              end: {
-                line: def.targetRange.end.line,
-                character: def.targetRange.end.character,
-              },
-            },
-          };
-        } else if ('uri' in def) {
-          // It's a Location
-          return {
-            uri: def.uri.toString(),
-            range: {
-              start: {
-                line: def.range.start.line,
-                character: def.range.start.character,
-              },
-              end: {
-                line: def.range.end.line,
-                character: def.range.end.character,
-              },
-            },
-          };
-        }
-      }
-      return null;
-    })
-    .filter(Boolean);
-
-  return { definitions: normalized };
-}
-
-// Helper function for symbol-based lookup (AI-friendly)
+// Helper function for symbol-based lookup
 async function findDefinitionBySymbol(
   symbolName: string,
   format: 'compact' | 'detailed'
