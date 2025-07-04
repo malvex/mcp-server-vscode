@@ -1,6 +1,51 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
 
+// Default code file extensions that support symbol extraction
+const DEFAULT_CODE_PATTERNS = [
+  '**/*.{js,jsx,mjs,cjs}', // JavaScript
+  '**/*.{ts,tsx,mts,cts}', // TypeScript
+  '**/*.{py,pyw}', // Python
+  '**/*.{java}', // Java
+  '**/*.{c,cpp,cc,cxx,h,hpp}', // C/C++
+  '**/*.{cs,vb}', // .NET languages
+  '**/*.{go}', // Go
+  '**/*.{rs}', // Rust
+  '**/*.{rb}', // Ruby
+  '**/*.{php}', // PHP
+  '**/*.{swift,m,mm}', // Swift/Objective-C
+  '**/*.{kt,kts}', // Kotlin
+  '**/*.{scala}', // Scala
+  '**/*.{r,R}', // R
+  '**/*.{lua}', // Lua
+  '**/*.{dart}', // Dart
+  '**/*.{ex,exs}', // Elixir
+  '**/*.{clj,cljs}', // Clojure
+  '**/*.{jl}', // Julia
+];
+
+// Language IDs that should be skipped even if file matches pattern
+const NON_CODE_LANGUAGE_IDS = [
+  'html',
+  'xml',
+  'markdown',
+  'json',
+  'jsonc',
+  'yaml',
+  'toml',
+  'ini',
+  'plaintext',
+  'csv',
+  'log',
+  'dockerfile',
+  'makefile',
+  'ignore',
+  'properties',
+  'shellscript',
+  'bat',
+  'powershell',
+];
+
 export const workspaceSymbolsTool: Tool = {
   name: 'workspaceSymbols',
   description: 'Get a complete map of all symbols in the workspace (classes, functions, etc)',
@@ -23,16 +68,24 @@ export const workspaceSymbolsTool: Tool = {
         type: 'boolean',
         description: 'Include symbols from external dependencies and libraries (default: false)',
       },
+      includeNonCodeFiles: {
+        type: 'boolean',
+        description: 'Include non-code files like HTML, JSON, Markdown (default: false)',
+      },
     },
     required: [],
   },
   handler: async (args) => {
     const {
       includeDetails = true,
-      filePattern = '**/*',
+      filePattern,
       maxFiles = 1000,
       includeExternalSymbols = false,
+      includeNonCodeFiles = false,
     } = args;
+
+    // If no file pattern specified, use default code patterns
+    const effectivePattern = filePattern || `{${DEFAULT_CODE_PATTERNS.join(',')}}`;
 
     try {
       // Get workspace folders to filter out external files
@@ -48,7 +101,7 @@ export const workspaceSymbolsTool: Tool = {
         '{**/node_modules/**,**/.vscode/**,**/venv/**,**/.env/**,**/site-packages/**,**/__pycache__/**,**/.git/**}';
 
       // Find all files matching the pattern
-      const files = await vscode.workspace.findFiles(filePattern, excludePattern, maxFiles);
+      const files = await vscode.workspace.findFiles(effectivePattern, excludePattern, maxFiles);
 
       const symbolsByFile: Record<string, any[]> = {};
       let totalSymbols = 0;
@@ -84,6 +137,11 @@ export const workspaceSymbolsTool: Tool = {
 
           // Skip binary files
           if (document.languageId === 'binary' || document.languageId === 'image') {
+            continue;
+          }
+
+          // Skip non-code files unless explicitly requested
+          if (!includeNonCodeFiles && NON_CODE_LANGUAGE_IDS.includes(document.languageId)) {
             continue;
           }
 
