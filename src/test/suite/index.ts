@@ -4,11 +4,18 @@ import { glob } from 'glob';
 
 export function run(): Promise<void> {
   // Create the mocha test
-  const mocha = new Mocha({
+  const mochaOptions: Mocha.MochaOptions = {
     ui: 'tdd',
     color: true,
     timeout: 60000, // 60 seconds for each test (VS Code operations can be slow)
-  });
+  };
+
+  // Check for grep pattern from environment variable
+  if (process.env.MOCHA_GREP) {
+    mochaOptions.grep = process.env.MOCHA_GREP;
+  }
+
+  const mocha = new Mocha(mochaOptions);
 
   const testsRoot = path.resolve(__dirname, '.');
 

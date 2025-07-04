@@ -12,11 +12,22 @@ async function main() {
     // The path to the test workspace
     const testWorkspace = path.resolve(__dirname, '../../test-workspace');
 
+    // Parse command line arguments for mocha options
+    const args = process.argv.slice(2);
+    const grepIndex = args.indexOf('--grep');
+    if (grepIndex !== -1 && args[grepIndex + 1]) {
+      process.env.MOCHA_GREP = args[grepIndex + 1];
+    }
+
     // Download VS Code, unzip it and run the integration test
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs: [testWorkspace, '--disable-extensions'],
+      extensionTestsEnv: {
+        ...process.env,
+        MOCHA_GREP: process.env.MOCHA_GREP,
+      },
     });
   } catch {
     console.error('Failed to run tests');

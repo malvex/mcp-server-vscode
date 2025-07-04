@@ -31,10 +31,28 @@ export async function searchWorkspaceSymbols(
   }
 
   // Now search for the specific symbol
-  const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+  let symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
     'vscode.executeWorkspaceSymbolProvider',
     query
   );
+
+  // If no results and we haven't retried yet, the language server might still be initializing
+  if ((!symbols || symbols.length === 0) && maxRetries > 0) {
+    const retryDelays = [1000, 3000, 10000]; // Progressive delays
+
+    for (let retry = 0; retry < Math.min(maxRetries, retryDelays.length); retry++) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
+
+      symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+        'vscode.executeWorkspaceSymbolProvider',
+        query
+      );
+
+      if (symbols && symbols.length > 0) {
+        break;
+      }
+    }
+  }
 
   // If we get results, mark languages as initialized
   if (symbols && symbols.length > 0) {
@@ -42,7 +60,7 @@ export async function searchWorkspaceSymbols(
       try {
         const document = await vscode.workspace.openTextDocument(symbol.location.uri);
         initializedLanguages.add(document.languageId);
-      } catch (error) {
+      } catch {
         // Skip if can't open document
       }
     }
@@ -133,13 +151,36 @@ export function isLanguageInitialized(languageId: string): boolean {
  * This triggers language server initialization if needed
  */
 async function ensureLanguageServersReady(): Promise<void> {
+  // First, try to open some workspace files to trigger language server activation
+  const workspaceFiles = await vscode.workspace.findFiles(
+    '**/*.{ts,js,py,java,cs,go,rs,rb,php,cpp,c}',
+    '**/node_modules/**',
+    10
+  );
+
+  if (workspaceFiles.length > 0) {
+    // Open a few files to trigger language servers
+    for (let i = 0; i < Math.min(3, workspaceFiles.length); i++) {
+      try {
+        const document = await vscode.workspace.openTextDocument(workspaceFiles[i]);
+        await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true });
+        initializedLanguages.add(document.languageId);
+      } catch {
+        // Skip if can't open document
+      }
+    }
+
+    // Give language servers a moment to activate
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
   // Try to find any symbols to trigger language server initialization
   // Using empty string or common patterns to get some results
   const commonQueries = ['', 'constructor', 'main', 'init', 'test', 'class', 'function'];
   const retryDelays = [1000, 3000, 10000]; // Progressive delays
 
   for (const searchQuery of commonQueries) {
-    let symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+    const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
       'vscode.executeWorkspaceSymbolProvider',
       searchQuery
     );
@@ -150,7 +191,7 @@ async function ensureLanguageServersReady(): Promise<void> {
         try {
           const document = await vscode.workspace.openTextDocument(symbol.location.uri);
           initializedLanguages.add(document.languageId);
-        } catch (error) {
+        } catch {
           // Skip if can't open document
         }
       }
@@ -173,7 +214,7 @@ async function ensureLanguageServersReady(): Promise<void> {
         try {
           const document = await vscode.workspace.openTextDocument(symbol.location.uri);
           initializedLanguages.add(document.languageId);
-        } catch (error) {
+        } catch {
           // Skip if can't open document
         }
       }
