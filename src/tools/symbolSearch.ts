@@ -22,11 +22,18 @@ export const symbolSearchTool: Tool = {
         ],
         description: 'Type of symbol to search for (default: all)',
       },
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency (default), "detailed" for full data',
+        default: 'compact',
+      },
     },
     required: ['query'],
   },
   handler: async (args) => {
-    const { query, kind = 'all' } = args;
+    const { query, kind = 'all', format = 'compact' } = args;
 
     // Search for symbols
     const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
@@ -58,21 +65,33 @@ export const symbolSearchTool: Tool = {
     }
 
     return {
-      symbols: filteredSymbols.map((sym) => ({
-        name: sym.name,
-        kind: vscode.SymbolKind[sym.kind],
-        containerName: sym.containerName,
-        location: {
-          uri: sym.location.uri.toString(),
-          range: {
-            start: {
-              line: sym.location.range.start.line,
-              character: sym.location.range.start.character,
-            },
-            end: { line: sym.location.range.end.line, character: sym.location.range.end.character },
-          },
-        },
-      })),
+      symbols:
+        format === 'compact'
+          ? filteredSymbols.map((sym) => [
+              sym.name,
+              vscode.SymbolKind[sym.kind].toLowerCase(),
+              sym.location.uri.toString(),
+              sym.location.range.start.line,
+              sym.containerName || '',
+            ])
+          : filteredSymbols.map((sym) => ({
+              name: sym.name,
+              kind: vscode.SymbolKind[sym.kind],
+              containerName: sym.containerName,
+              location: {
+                uri: sym.location.uri.toString(),
+                range: {
+                  start: {
+                    line: sym.location.range.start.line,
+                    character: sym.location.range.start.character,
+                  },
+                  end: {
+                    line: sym.location.range.end.line,
+                    character: sym.location.range.end.character,
+                  },
+                },
+              },
+            })),
     };
   },
 };

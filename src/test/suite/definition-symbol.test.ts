@@ -23,6 +23,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
     await openTestFile('app.ts');
 
     const result = await callTool('definition', {
+      format: 'detailed',
       symbol: 'add',
     });
 
@@ -60,6 +61,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
 
   test('should find class definition by symbol name', async () => {
     const result = await callTool('definition', {
+      format: 'detailed',
       symbol: 'Calculator',
     });
 
@@ -74,6 +76,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
 
   test('should find class method definition by qualified name', async () => {
     const result = await callTool('definition', {
+      format: 'detailed',
       symbol: 'Calculator.add',
     });
 
@@ -91,6 +94,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
 
   test('should handle symbol not found', async () => {
     const result = await callTool('definition', {
+      format: 'detailed',
       symbol: 'NonExistentSymbol',
     });
 
@@ -103,6 +107,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
   test('should handle multiple definitions', async () => {
     // 'add' might match both the function and the Calculator method
     const result = await callTool('definition', {
+      format: 'detailed',
       symbol: 'add',
     });
 
@@ -134,6 +139,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
 
     // Test backward compatibility with position-based approach
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 4,
       character: 38,
@@ -149,7 +155,9 @@ suite('Definition Tool Symbol-Based Tests', () => {
 
   test('should validate input parameters', async () => {
     // Test with no parameters
-    const result = await callTool('definition', {});
+    const result = await callTool('definition', {
+      format: 'detailed',
+    });
 
     assert.ok(result.error, 'Should have error');
     assert.ok(
@@ -160,6 +168,7 @@ suite('Definition Tool Symbol-Based Tests', () => {
 
   test('should find method in nested class', async () => {
     const result = await callTool('definition', {
+      format: 'detailed',
       symbol: 'Calculator.getResult',
     });
 

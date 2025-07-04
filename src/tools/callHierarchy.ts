@@ -26,11 +26,19 @@ export const callHierarchyTool: Tool = {
           'Get incoming calls (who calls this), outgoing calls (what this calls), or both',
         default: 'incoming',
       },
+
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency (default), "detailed" for full data',
+        default: 'compact',
+      },
     },
     required: ['symbol', 'direction'],
   },
   handler: async (args) => {
-    const { symbol, uri, direction = 'incoming' } = args;
+    const { symbol, uri, direction = 'incoming', format = 'compact' } = args;
 
     // Step 1: Find the symbol(s) with the given name
     const searchQuery = symbol.includes('.') ? symbol.split('.').pop()! : symbol;
@@ -115,16 +123,27 @@ export const callHierarchyTool: Tool = {
       if (!items || items.length === 0) continue;
 
       const item = items[0];
-      const result: any = {
-        symbol: {
-          name: sym.name,
-          kind: vscode.SymbolKind[sym.kind],
-          container: sym.containerName,
-          file: sym.location.uri.fsPath,
-          line: sym.location.range.start.line, // Keep 0-based for AI
-        },
-        calls: [],
-      };
+      const result: any =
+        format === 'compact'
+          ? {
+              symbol: [
+                sym.name,
+                vscode.SymbolKind[sym.kind].toLowerCase(),
+                sym.location.uri.fsPath,
+                sym.location.range.start.line,
+              ],
+              calls: [],
+            }
+          : {
+              symbol: {
+                name: sym.name,
+                kind: vscode.SymbolKind[sym.kind],
+                container: sym.containerName,
+                file: sym.location.uri.fsPath,
+                line: sym.location.range.start.line, // Keep 0-based for AI
+              },
+              calls: [],
+            };
 
       if (direction === 'incoming' || direction === 'both') {
         const incomingCalls = await vscode.commands.executeCommand<
@@ -132,22 +151,35 @@ export const callHierarchyTool: Tool = {
         >('vscode.provideIncomingCalls', item);
 
         if (incomingCalls && incomingCalls.length > 0) {
-          result.calls.push(
-            ...incomingCalls.map((call) => ({
-              type: 'incoming',
-              from: {
-                name: call.from.name,
-                kind: vscode.SymbolKind[call.from.kind],
-                file: call.from.uri.fsPath,
-                line: call.from.range.start.line,
-              },
-              locations: call.fromRanges.map((range) => ({
-                line: range.start.line,
-                character: range.start.character,
-                preview: getLinePreview(document, range.start.line),
-              })),
-            }))
-          );
+          if (format === 'compact') {
+            result.calls.push(
+              ...incomingCalls.map((call) => [
+                'incoming',
+                call.from.name,
+                vscode.SymbolKind[call.from.kind].toLowerCase(),
+                call.from.uri.fsPath,
+                call.from.range.start.line,
+                call.fromRanges.map((range) => [range.start.line, range.start.character]),
+              ])
+            );
+          } else {
+            result.calls.push(
+              ...incomingCalls.map((call) => ({
+                type: 'incoming',
+                from: {
+                  name: call.from.name,
+                  kind: vscode.SymbolKind[call.from.kind],
+                  file: call.from.uri.fsPath,
+                  line: call.from.range.start.line,
+                },
+                locations: call.fromRanges.map((range) => ({
+                  line: range.start.line,
+                  character: range.start.character,
+                  preview: getLinePreview(document, range.start.line),
+                })),
+              }))
+            );
+          }
         }
       }
 
@@ -157,21 +189,34 @@ export const callHierarchyTool: Tool = {
         >('vscode.provideOutgoingCalls', item);
 
         if (outgoingCalls && outgoingCalls.length > 0) {
-          result.calls.push(
-            ...outgoingCalls.map((call) => ({
-              type: 'outgoing',
-              to: {
-                name: call.to.name,
-                kind: vscode.SymbolKind[call.to.kind],
-                file: call.to.uri.fsPath,
-                line: call.to.range.start.line,
-              },
-              locations: call.fromRanges.map((range) => ({
-                line: range.start.line,
-                character: range.start.character,
-              })),
-            }))
-          );
+          if (format === 'compact') {
+            result.calls.push(
+              ...outgoingCalls.map((call) => [
+                'outgoing',
+                call.to.name,
+                vscode.SymbolKind[call.to.kind].toLowerCase(),
+                call.to.uri.fsPath,
+                call.to.range.start.line,
+                call.fromRanges.map((range) => [range.start.line, range.start.character]),
+              ])
+            );
+          } else {
+            result.calls.push(
+              ...outgoingCalls.map((call) => ({
+                type: 'outgoing',
+                to: {
+                  name: call.to.name,
+                  kind: vscode.SymbolKind[call.to.kind],
+                  file: call.to.uri.fsPath,
+                  line: call.to.range.start.line,
+                },
+                locations: call.fromRanges.map((range) => ({
+                  line: range.start.line,
+                  character: range.start.character,
+                })),
+              }))
+            );
+          }
         }
       }
 

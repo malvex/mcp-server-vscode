@@ -26,6 +26,7 @@ suite('Hover Tool Tests', () => {
   test('should return type information for add function', async () => {
     // Use AI-friendly symbol-based approach
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'add',
     });
 
@@ -51,6 +52,7 @@ suite('Hover Tool Tests', () => {
 
   test('should return JSDoc documentation for function', async () => {
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'add',
     });
 
@@ -75,6 +77,7 @@ suite('Hover Tool Tests', () => {
 
   test('should return class information', async () => {
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'Calculator',
     });
 
@@ -97,6 +100,7 @@ suite('Hover Tool Tests', () => {
 
   test('should return method information with JSDoc', async () => {
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'Calculator.add',
     });
 
@@ -138,6 +142,7 @@ suite('Hover Tool Tests', () => {
 
   test('should handle symbol not found', async () => {
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'nonExistentFunction',
     });
 
@@ -152,6 +157,7 @@ suite('Hover Tool Tests', () => {
 
   test('should include code snippet in response', async () => {
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'multiply',
     });
 
@@ -178,6 +184,7 @@ suite('Hover Tool Tests', () => {
   test('should handle multiple matches', async () => {
     // If there are multiple symbols with the same name, it should return all
     const result = await callTool('hover', {
+      format: 'detailed',
       symbol: 'add', // This could match both the function and the method
     });
 

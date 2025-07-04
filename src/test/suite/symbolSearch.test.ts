@@ -28,6 +28,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should find function symbols by name', async () => {
     // Search for 'add' function
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'add',
       kind: 'function',
     });
@@ -46,6 +47,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should find class symbols by name', async () => {
     // Search for 'Calculator' class
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'Calculator',
       kind: 'class',
     });
@@ -64,6 +66,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should find method symbols', async () => {
     // Search for 'getResult' method
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'getResult',
       kind: 'method',
     });
@@ -84,6 +87,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should search all symbol kinds when kind is not specified', async () => {
     // Search for 'calc' without specifying kind
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'calc',
     });
 
@@ -101,6 +105,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should return empty array for non-existent symbols', async () => {
     // Search for a symbol that doesn't exist
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'nonExistentSymbol',
     });
 
@@ -111,6 +116,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should include location information for symbols', async () => {
     // Search for 'add' function
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'add',
       kind: 'function',
     });
@@ -134,6 +140,7 @@ suite('Symbol Search Tool Tests', () => {
   test('should find partial matches', async () => {
     // Search with partial name
     const result = await callTool('symbolSearch', {
+      format: 'detailed',
       query: 'calc',
     });
 

@@ -23,6 +23,7 @@ suite('References Tool Symbol-Based Tests', () => {
     await openTestFile('app.ts');
 
     const result = await callTool('references', {
+      format: 'detailed',
       symbol: 'add',
       includeDeclaration: true,
     });
@@ -45,6 +46,7 @@ suite('References Tool Symbol-Based Tests', () => {
 
   test('should find class references by symbol name', async () => {
     const result = await callTool('references', {
+      format: 'detailed',
       symbol: 'Calculator',
     });
 
@@ -59,6 +61,7 @@ suite('References Tool Symbol-Based Tests', () => {
 
   test('should find class method references by qualified name', async () => {
     const result = await callTool('references', {
+      format: 'detailed',
       symbol: 'Calculator.add',
     });
 
@@ -76,11 +79,13 @@ suite('References Tool Symbol-Based Tests', () => {
 
   test('should exclude declaration when requested', async () => {
     const withDeclaration = await callTool('references', {
+      format: 'detailed',
       symbol: 'add',
       includeDeclaration: true,
     });
 
     const withoutDeclaration = await callTool('references', {
+      format: 'detailed',
       symbol: 'add',
       includeDeclaration: false,
     });
@@ -97,6 +102,7 @@ suite('References Tool Symbol-Based Tests', () => {
 
   test('should handle symbol not found', async () => {
     const result = await callTool('references', {
+      format: 'detailed',
       symbol: 'NonExistentSymbol',
     });
 
@@ -112,6 +118,7 @@ suite('References Tool Symbol-Based Tests', () => {
 
     // Test backward compatibility with position-based approach
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 4,
       character: 38, // Position of 'add' function call
@@ -128,7 +135,9 @@ suite('References Tool Symbol-Based Tests', () => {
 
   test('should validate input parameters', async () => {
     // Test with no parameters
-    const result = await callTool('references', {});
+    const result = await callTool('references', {
+      format: 'detailed',
+    });
 
     assert.ok(result.error, 'Should have error');
     assert.ok(
@@ -140,6 +149,7 @@ suite('References Tool Symbol-Based Tests', () => {
   test('should handle multiple symbols with same name', async () => {
     // 'add' exists as both a function and a method
     const result = await callTool('references', {
+      format: 'detailed',
       symbol: 'add',
     });
 
@@ -156,6 +166,7 @@ suite('References Tool Symbol-Based Tests', () => {
 
   test('should return consistent reference format', async () => {
     const result = await callTool('references', {
+      format: 'detailed',
       symbol: 'Calculator',
     });
 

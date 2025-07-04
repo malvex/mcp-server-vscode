@@ -23,19 +23,26 @@ export const referencesTool: Tool = {
         type: 'boolean',
         description: 'Include the declaration in results (default: true)',
       },
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency (default), "detailed" for full data',
+        default: 'compact',
+      },
     },
     required: [], // Make all optional, but validate in handler
   },
   handler: async (args) => {
-    const { symbol, uri, line, character, includeDeclaration = true } = args;
+    const { symbol, uri, line, character, includeDeclaration = true, format = 'compact' } = args;
 
     // Decide which approach to use
     if (symbol) {
       // AI-friendly symbol-based approach
-      return await findReferencesBySymbol(symbol, includeDeclaration);
+      return await findReferencesBySymbol(symbol, includeDeclaration, format);
     } else if (uri !== undefined && line !== undefined && character !== undefined) {
       // Position-based approach
-      return await findReferencesByPosition(uri, line, character, includeDeclaration);
+      return await findReferencesByPosition(uri, line, character, includeDeclaration, format);
     } else {
       return {
         error: 'Either provide a symbol name OR uri with line and character position',
@@ -49,7 +56,8 @@ async function findReferencesByPosition(
   uri: string,
   line: number,
   character: number,
-  includeDeclaration: boolean
+  includeDeclaration: boolean,
+  format: 'compact' | 'detailed'
 ): Promise<any> {
   const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
   const position = new vscode.Position(line, character);
@@ -86,22 +94,34 @@ async function findReferencesByPosition(
   }
 
   return {
-    references: filteredRefs
-      .filter((ref) => ref && ref.uri && ref.range) // Filter out malformed results
-      .map((ref) => ({
-        uri: ref.uri.toString(),
-        range: {
-          start: { line: ref.range.start.line, character: ref.range.start.character },
-          end: { line: ref.range.end.line, character: ref.range.end.character },
-        },
-      })),
+    references:
+      format === 'compact'
+        ? filteredRefs
+            .filter((ref) => ref && ref.uri && ref.range)
+            .map((ref) => [
+              ref.uri.toString(),
+              ref.range.start.line,
+              ref.range.start.character,
+              ref.range.end.line,
+              ref.range.end.character,
+            ])
+        : filteredRefs
+            .filter((ref) => ref && ref.uri && ref.range)
+            .map((ref) => ({
+              uri: ref.uri.toString(),
+              range: {
+                start: { line: ref.range.start.line, character: ref.range.start.character },
+                end: { line: ref.range.end.line, character: ref.range.end.character },
+              },
+            })),
   };
 }
 
 // Helper function for symbol-based lookup (AI-friendly)
 async function findReferencesBySymbol(
   symbolName: string,
-  includeDeclaration: boolean
+  includeDeclaration: boolean,
+  format: 'compact' | 'detailed'
 ): Promise<any> {
   // Parse symbol name (e.g., "ClassName.methodName" or just "functionName")
   const parts = symbolName.split('.');
@@ -212,15 +232,25 @@ async function findReferencesBySymbol(
             // Get the relative path for display
             const relativePath = vscode.workspace.asRelativePath(ref.uri);
 
-            allReferences.push({
-              uri: ref.uri.toString(),
-              file: relativePath,
-              line: ref.range.start.line,
-              range: {
-                start: { line: ref.range.start.line, character: ref.range.start.character },
-                end: { line: ref.range.end.line, character: ref.range.end.character },
-              },
-            });
+            if (format === 'compact') {
+              allReferences.push([
+                relativePath,
+                ref.range.start.line,
+                ref.range.start.character,
+                ref.range.end.line,
+                ref.range.end.character,
+              ]);
+            } else {
+              allReferences.push({
+                uri: ref.uri.toString(),
+                file: relativePath,
+                line: ref.range.start.line,
+                range: {
+                  start: { line: ref.range.start.line, character: ref.range.start.character },
+                  end: { line: ref.range.end.line, character: ref.range.end.character },
+                },
+              });
+            }
           }
         }
       }

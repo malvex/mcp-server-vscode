@@ -18,19 +18,26 @@ export const definitionTool: Tool = {
       uri: { type: 'string', description: 'File URI (required for position-based lookup)' },
       line: { type: 'number', description: 'Line number (0-based, required with uri)' },
       character: { type: 'number', description: 'Character position (0-based, required with uri)' },
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency (default), "detailed" for full data',
+        default: 'compact',
+      },
     },
     required: [], // Make all optional, but validate in handler
   },
   handler: async (args) => {
-    const { symbol, uri, line, character } = args;
+    const { symbol, uri, line, character, format = 'compact' } = args;
 
     // Decide which approach to use
     if (symbol) {
       // AI-friendly symbol-based approach
-      return await findDefinitionBySymbol(symbol);
+      return await findDefinitionBySymbol(symbol, format);
     } else if (uri !== undefined && line !== undefined && character !== undefined) {
       // Position-based approach
-      return await findDefinitionByPosition(uri, line, character);
+      return await findDefinitionByPosition(uri, line, character, format);
     } else {
       return {
         error: 'Either provide a symbol name OR uri with line and character position',
@@ -43,7 +50,8 @@ export const definitionTool: Tool = {
 async function findDefinitionByPosition(
   uri: string,
   line: number,
-  character: number
+  character: number,
+  format: 'compact' | 'detailed'
 ): Promise<any> {
   const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
   const position = new vscode.Position(line, character);
@@ -59,36 +67,58 @@ async function findDefinitionByPosition(
   // Handle both Location and LocationLink formats
   const normalized = definitions
     .map((def) => {
-      if ('targetUri' in def) {
-        // It's a LocationLink
-        return {
-          uri: def.targetUri.toString(),
-          range: {
-            start: {
-              line: def.targetRange.start.line,
-              character: def.targetRange.start.character,
+      if (format === 'compact') {
+        if ('targetUri' in def) {
+          // It's a LocationLink
+          return [
+            def.targetUri.toString(),
+            def.targetRange.start.line,
+            def.targetRange.start.character,
+            def.targetRange.end.line,
+            def.targetRange.end.character,
+          ];
+        } else if ('uri' in def) {
+          // It's a Location
+          return [
+            def.uri.toString(),
+            def.range.start.line,
+            def.range.start.character,
+            def.range.end.line,
+            def.range.end.character,
+          ];
+        }
+      } else {
+        if ('targetUri' in def) {
+          // It's a LocationLink
+          return {
+            uri: def.targetUri.toString(),
+            range: {
+              start: {
+                line: def.targetRange.start.line,
+                character: def.targetRange.start.character,
+              },
+              end: {
+                line: def.targetRange.end.line,
+                character: def.targetRange.end.character,
+              },
             },
-            end: {
-              line: def.targetRange.end.line,
-              character: def.targetRange.end.character,
+          };
+        } else if ('uri' in def) {
+          // It's a Location
+          return {
+            uri: def.uri.toString(),
+            range: {
+              start: {
+                line: def.range.start.line,
+                character: def.range.start.character,
+              },
+              end: {
+                line: def.range.end.line,
+                character: def.range.end.character,
+              },
             },
-          },
-        };
-      } else if ('uri' in def) {
-        // It's a Location
-        return {
-          uri: def.uri.toString(),
-          range: {
-            start: {
-              line: def.range.start.line,
-              character: def.range.start.character,
-            },
-            end: {
-              line: def.range.end.line,
-              character: def.range.end.character,
-            },
-          },
-        };
+          };
+        }
       }
       return null;
     })
@@ -98,7 +128,10 @@ async function findDefinitionByPosition(
 }
 
 // Helper function for symbol-based lookup (AI-friendly)
-async function findDefinitionBySymbol(symbolName: string): Promise<any> {
+async function findDefinitionBySymbol(
+  symbolName: string,
+  format: 'compact' | 'detailed'
+): Promise<any> {
   // Parse symbol name (e.g., "ClassName.methodName" or just "functionName")
   const parts = symbolName.split('.');
   const primarySymbol = parts[0];
@@ -148,51 +181,87 @@ async function findDefinitionBySymbol(symbolName: string): Promise<any> {
             // Find the member within the container
             const member = findSymbolByName(container.children, memberSymbol);
             if (member) {
-              allDefinitions.push({
-                symbol: {
-                  name: member.name,
-                  kind: vscode.SymbolKind[member.kind],
-                  container: container.name,
-                  file: sym.location.uri.fsPath,
-                  line: member.range.start.line,
-                },
-                uri: sym.location.uri.toString(),
-                range: {
-                  start: {
+              if (format === 'compact') {
+                allDefinitions.push({
+                  symbol: [
+                    member.name,
+                    vscode.SymbolKind[member.kind].toLowerCase(),
+                    sym.location.uri.fsPath,
+                    member.range.start.line,
+                  ],
+                  uri: sym.location.uri.toString(),
+                  range: [
+                    member.range.start.line,
+                    member.range.start.character,
+                    member.range.end.line,
+                    member.range.end.character,
+                  ],
+                });
+              } else {
+                allDefinitions.push({
+                  symbol: {
+                    name: member.name,
+                    kind: vscode.SymbolKind[member.kind],
+                    container: container.name,
+                    file: sym.location.uri.fsPath,
                     line: member.range.start.line,
-                    character: member.range.start.character,
                   },
-                  end: {
-                    line: member.range.end.line,
-                    character: member.range.end.character,
+                  uri: sym.location.uri.toString(),
+                  range: {
+                    start: {
+                      line: member.range.start.line,
+                      character: member.range.start.character,
+                    },
+                    end: {
+                      line: member.range.end.line,
+                      character: member.range.end.character,
+                    },
                   },
-                },
-              });
+                });
+              }
             }
           }
         }
       } else {
         // For standalone symbols, use the symbol location directly
-        allDefinitions.push({
-          symbol: {
-            name: sym.name,
-            kind: vscode.SymbolKind[sym.kind],
-            container: sym.containerName,
-            file: sym.location.uri.fsPath,
-            line: sym.location.range.start.line,
-          },
-          uri: sym.location.uri.toString(),
-          range: {
-            start: {
+        if (format === 'compact') {
+          allDefinitions.push({
+            symbol: [
+              sym.name,
+              vscode.SymbolKind[sym.kind].toLowerCase(),
+              sym.location.uri.fsPath,
+              sym.location.range.start.line,
+            ],
+            uri: sym.location.uri.toString(),
+            range: [
+              sym.location.range.start.line,
+              sym.location.range.start.character,
+              sym.location.range.end.line,
+              sym.location.range.end.character,
+            ],
+          });
+        } else {
+          allDefinitions.push({
+            symbol: {
+              name: sym.name,
+              kind: vscode.SymbolKind[sym.kind],
+              container: sym.containerName,
+              file: sym.location.uri.fsPath,
               line: sym.location.range.start.line,
-              character: sym.location.range.start.character,
             },
-            end: {
-              line: sym.location.range.end.line,
-              character: sym.location.range.end.character,
+            uri: sym.location.uri.toString(),
+            range: {
+              start: {
+                line: sym.location.range.start.line,
+                character: sym.location.range.start.character,
+              },
+              end: {
+                line: sym.location.range.end.line,
+                character: sym.location.range.end.character,
+              },
             },
-          },
-        });
+          });
+        }
       }
     } catch (error) {
       // Skip symbols that can't be processed

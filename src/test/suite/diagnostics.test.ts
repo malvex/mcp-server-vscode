@@ -29,6 +29,7 @@ suite('Diagnostics Tool Tests', () => {
     const uri = getTestFileUri('app.ts');
 
     const result = await callTool('diagnostics', {
+      format: 'detailed',
       uri: uri.toString(),
     });
 
@@ -52,6 +53,7 @@ suite('Diagnostics Tool Tests', () => {
     const uri = getTestFileUri('app.ts');
 
     const result = await callTool('diagnostics', {
+      format: 'detailed',
       uri: uri.toString(),
     });
 
@@ -78,6 +80,7 @@ suite('Diagnostics Tool Tests', () => {
     const uri = getTestFileUri('math.ts');
 
     const result = await callTool('diagnostics', {
+      format: 'detailed',
       uri: uri.toString(),
     });
 
@@ -91,7 +94,9 @@ suite('Diagnostics Tool Tests', () => {
 
   test('should get all workspace diagnostics', async () => {
     // Get diagnostics for entire workspace (no uri)
-    const result = await callTool('diagnostics', {});
+    const result = await callTool('diagnostics', {
+      format: 'detailed',
+    });
 
     assert.ok(result.diagnostics, 'Should return diagnostics');
     assert.ok(
@@ -112,6 +117,7 @@ suite('Diagnostics Tool Tests', () => {
     const uri = getTestFileUri('app.ts');
 
     const result = await callTool('diagnostics', {
+      format: 'detailed',
       uri: uri.toString(),
     });
 
@@ -131,6 +137,7 @@ suite('Diagnostics Tool Tests', () => {
     const uri = getTestFileUri('app.ts');
 
     const result = await callTool('diagnostics', {
+      format: 'detailed',
       uri: uri.toString(),
     });
 
@@ -151,6 +158,7 @@ suite('Diagnostics Tool Tests', () => {
     const uri = vscode.Uri.file('/non/existent/file.ts');
 
     const result = await callTool('diagnostics', {
+      format: 'detailed',
       uri: uri.toString(),
     });
 

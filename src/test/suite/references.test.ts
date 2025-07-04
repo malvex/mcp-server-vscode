@@ -23,6 +23,7 @@ suite('References Tool Tests', () => {
 
     // Find references to 'add' function (line 6, character 17)
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 6,
       character: 17,
@@ -51,6 +52,7 @@ suite('References Tool Tests', () => {
 
     // Find references to 'add' function without declaration
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 6,
       character: 17,
@@ -73,6 +75,7 @@ suite('References Tool Tests', () => {
 
     // Find references to 'Calculator' class (line 20, character 13)
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 20,
       character: 13,
@@ -99,6 +102,7 @@ suite('References Tool Tests', () => {
 
     // Find references to 'getResult' method (line 34, character 4) - method name
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 34,
       character: 4,
@@ -120,6 +124,7 @@ suite('References Tool Tests', () => {
 
     // Find references to 'reset' method which is not used
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 41, // reset method line
       character: 2, // 'reset' starts at character 2
@@ -149,6 +154,7 @@ suite('References Tool Tests', () => {
 
     // Find references to 'calc' variable (line 9, character 8)
     const result = await callTool('references', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 9,
       character: 8,

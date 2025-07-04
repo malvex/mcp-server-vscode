@@ -16,11 +16,18 @@ export const hoverTool: Tool = {
         type: 'string',
         description: 'File URI to search in (optional - searches entire workspace if not provided)',
       },
+      format: {
+        type: 'string',
+        enum: ['compact', 'detailed'],
+        description:
+          'Output format: "compact" for AI/token efficiency (default), "detailed" for full data',
+        default: 'compact',
+      },
     },
     required: ['symbol'],
   },
   handler: async (args) => {
-    const { symbol, uri } = args;
+    const { symbol, uri, format = 'compact' } = args;
 
     // Step 1: Find the symbol(s) with the given name
     const searchQuery = symbol.includes('.') ? symbol.split('.').pop()! : symbol;
@@ -115,20 +122,32 @@ export const hoverTool: Tool = {
         });
       });
 
-      results.push({
-        symbol: {
-          name: sym.name,
-          kind: vscode.SymbolKind[sym.kind],
-          container: sym.containerName,
-          file: sym.location.uri.fsPath,
-          line: sym.location.range.start.line, // Keep 0-based for AI
-        },
-        hover: {
-          contents: contents,
-          // Include code snippet for context (line is already 0-based)
-          codeSnippet: getCodeSnippet(document, sym.location.range.start.line),
-        },
-      });
+      if (format === 'compact') {
+        results.push({
+          symbol: [
+            sym.name,
+            vscode.SymbolKind[sym.kind].toLowerCase(),
+            sym.location.uri.fsPath,
+            sym.location.range.start.line,
+          ],
+          hover: contents,
+        });
+      } else {
+        results.push({
+          symbol: {
+            name: sym.name,
+            kind: vscode.SymbolKind[sym.kind],
+            container: sym.containerName,
+            file: sym.location.uri.fsPath,
+            line: sym.location.range.start.line, // Keep 0-based for AI
+          },
+          hover: {
+            contents: contents,
+            // Include code snippet for context (line is already 0-based)
+            codeSnippet: getCodeSnippet(document, sym.location.range.start.line),
+          },
+        });
+      }
     }
 
     // Return appropriate format based on number of matches

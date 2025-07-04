@@ -28,6 +28,7 @@ suite('Call Hierarchy Tool Tests', () => {
 
     // Use AI-friendly symbol-based approach
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'add',
       direction: 'incoming',
     });
@@ -40,6 +41,7 @@ suite('Call Hierarchy Tool Tests', () => {
       // But let's be more strict in testing - retry once
       await new Promise((resolve) => setTimeout(resolve, 2000));
       const retryResult = await callTool('callHierarchy', {
+        format: 'detailed',
         symbol: 'add',
         direction: 'incoming',
       });
@@ -74,6 +76,7 @@ suite('Call Hierarchy Tool Tests', () => {
     await openTestFile('app.ts');
 
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'calculateSum',
       direction: 'outgoing',
     });
@@ -94,6 +97,7 @@ suite('Call Hierarchy Tool Tests', () => {
     await openTestFile('math.ts');
 
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'Calculator.multiply',
       direction: 'incoming',
     });
@@ -116,6 +120,7 @@ suite('Call Hierarchy Tool Tests', () => {
   test('should handle ambiguous symbol names correctly', async () => {
     // Test that when searching for 'add', we get the function not the method
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'add',
       direction: 'incoming',
     });
@@ -133,6 +138,7 @@ suite('Call Hierarchy Tool Tests', () => {
     await openTestFile('math.ts');
 
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'add',
       direction: 'incoming',
     });
@@ -165,6 +171,7 @@ suite('Call Hierarchy Tool Tests', () => {
 
   test('should handle symbol not found', async () => {
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'nonExistentFunction',
       direction: 'incoming',
     });
@@ -182,6 +189,7 @@ suite('Call Hierarchy Tool Tests', () => {
     await openTestFile('app.ts');
 
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'calculateSum',
       direction: 'both',
     });
@@ -206,6 +214,7 @@ suite('Call Hierarchy Tool Tests', () => {
 
   test('should work with class method notation', async () => {
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'Calculator.add',
       direction: 'incoming',
     });
@@ -230,6 +239,7 @@ suite('Call Hierarchy Tool Tests', () => {
 
   test('should provide helpful error messages with suggestions', async () => {
     const result = await callTool('callHierarchy', {
+      format: 'detailed',
       symbol: 'calc', // Partial name
       direction: 'incoming',
     });

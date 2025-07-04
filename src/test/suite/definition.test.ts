@@ -23,6 +23,7 @@ suite('Definition Tool Tests', () => {
 
     // Click on 'add' function call (line 4, character 38) - in the reduce callback
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 4,
       character: 38,
@@ -42,6 +43,7 @@ suite('Definition Tool Tests', () => {
 
     // Click on 'Calculator' in new Calculator() (line 9, character 20)
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 9,
       character: 20,
@@ -64,6 +66,7 @@ suite('Definition Tool Tests', () => {
 
     // Click on 'getResult' method call (line 13, character 22)
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 13,
       character: 22,
@@ -82,6 +85,7 @@ suite('Definition Tool Tests', () => {
 
     // Click on './math' import path (line 0, character 45)
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 0,
       character: 45,
@@ -98,6 +102,7 @@ suite('Definition Tool Tests', () => {
 
     // Click on a comment
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 1,
       character: 5,
@@ -112,6 +117,7 @@ suite('Definition Tool Tests', () => {
 
     // Click on 'calc' variable usage (line 11, character 3)
     const result = await callTool('definition', {
+      format: 'detailed',
       uri: document.uri.toString(),
       line: 11,
       character: 3,
