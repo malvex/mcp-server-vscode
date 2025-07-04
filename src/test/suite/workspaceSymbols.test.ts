@@ -217,7 +217,7 @@ suite('Workspace Symbols Tool Tests', () => {
       assert.ok(pyFiles.length > 0, 'Should have Python files');
     } else {
       // No Python files in test workspace, skip
-      console.log('No Python files in test workspace, skipping Python test');
+      console.log('No Python files in test workspace, skipping Python test (this is expected)');
     }
   });
 
