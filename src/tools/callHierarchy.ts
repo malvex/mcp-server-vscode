@@ -87,7 +87,23 @@ export const callHierarchyTool: Tool = {
 
     for (const sym of matchingSymbols) {
       const document = await vscode.workspace.openTextDocument(sym.location.uri);
-      const position = sym.location.range.start;
+
+      // For better results, position cursor in the middle of the symbol name
+      const line = document.lineAt(sym.location.range.start.line);
+      const lineText = line.text;
+      const symbolStartChar = lineText.indexOf(searchQuery, sym.location.range.start.character);
+
+      let position: vscode.Position;
+      if (symbolStartChar !== -1) {
+        // Position cursor in the middle of the symbol name for better results
+        position = new vscode.Position(
+          sym.location.range.start.line,
+          symbolStartChar + Math.floor(searchQuery.length / 2)
+        );
+      } else {
+        // Fallback to start position
+        position = sym.location.range.start;
+      }
 
       // Get call hierarchy item
       const items = await vscode.commands.executeCommand<vscode.CallHierarchyItem[]>(
