@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
+import { searchWorkspaceSymbols, getDocumentSymbols } from './utils/symbolProvider';
 
 export const definitionTool: Tool = {
   name: 'definition',
@@ -138,10 +139,7 @@ async function findDefinitionBySymbol(
   const memberSymbol = parts[1];
 
   // Search for the symbol in the workspace
-  const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-    'vscode.executeWorkspaceSymbolProvider',
-    primarySymbol
-  );
+  const symbols = await searchWorkspaceSymbols(primarySymbol);
 
   if (!symbols || symbols.length === 0) {
     return {
@@ -169,10 +167,7 @@ async function findDefinitionBySymbol(
         const document = await vscode.workspace.openTextDocument(sym.location.uri);
 
         // Get document symbols to find the member
-        const docSymbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-          'vscode.executeDocumentSymbolProvider',
-          document.uri
-        );
+        const docSymbols = await getDocumentSymbols(document);
 
         if (docSymbols) {
           // Find the class/container
@@ -285,7 +280,10 @@ async function findDefinitionBySymbol(
       return {
         symbol: symbolName,
         ...allDefinitions[0],
-        // Definition format - symbol: [name, kind, filePath, line], range: [startLine, startColumn, endLine, endColumn]
+        definitionFormat: {
+          symbol: '[name, kind, filePath, line]',
+          range: '[startLine, startColumn, endLine, endColumn]',
+        },
         definitions: [allDefinitions[0]],
       };
     } else {
@@ -300,7 +298,10 @@ async function findDefinitionBySymbol(
       return {
         symbol: symbolName,
         multipleDefinitions: true,
-        // Definition format - symbol: [name, kind, filePath, line], range: [startLine, startColumn, endLine, endColumn]
+        definitionFormat: {
+          symbol: '[name, kind, filePath, line]',
+          range: '[startLine, startColumn, endLine, endColumn]',
+        },
         definitions: allDefinitions,
       };
     } else {

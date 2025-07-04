@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
+import { searchWorkspaceSymbols } from './utils/symbolProvider';
 
 export const hoverTool: Tool = {
   name: 'hover',
@@ -31,10 +32,7 @@ export const hoverTool: Tool = {
 
     // Step 1: Find the symbol(s) with the given name
     const searchQuery = symbol.includes('.') ? symbol.split('.').pop()! : symbol;
-    const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-      'vscode.executeWorkspaceSymbolProvider',
-      searchQuery
-    );
+    const symbols = await searchWorkspaceSymbols(searchQuery);
 
     if (!symbols || symbols.length === 0) {
       return {
@@ -161,7 +159,7 @@ export const hoverTool: Tool = {
       if (format === 'compact') {
         return {
           ...results[0],
-          // Symbol format: [name, kind, filePath, line]
+          symbolFormat: '[name, kind, filePath, line]',
         };
       }
       return results[0];
@@ -171,7 +169,7 @@ export const hoverTool: Tool = {
         return {
           symbol: symbol,
           multipleMatches: true,
-          // Symbol format: [name, kind, filePath, line]
+          symbolFormat: '[name, kind, filePath, line]',
           matches: results,
         };
       } else {

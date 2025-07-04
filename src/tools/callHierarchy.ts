@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
+import { searchWorkspaceSymbols } from './utils/symbolProvider';
 
 export const callHierarchyTool: Tool = {
   name: 'callHierarchy',
@@ -42,10 +43,7 @@ export const callHierarchyTool: Tool = {
 
     // Step 1: Find the symbol(s) with the given name
     const searchQuery = symbol.includes('.') ? symbol.split('.').pop()! : symbol;
-    const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-      'vscode.executeWorkspaceSymbolProvider',
-      searchQuery
-    );
+    const symbols = await searchWorkspaceSymbols(searchQuery);
 
     if (!symbols || symbols.length === 0) {
       return {
@@ -235,8 +233,8 @@ export const callHierarchyTool: Tool = {
       if (format === 'compact' && results[0].calls.length > 0) {
         return {
           ...results[0],
-          // Call format: [direction, name, kind, filePath, line, locations]
-          // where locations is an array of [line, column] pairs
+          callFormat: '[direction, name, kind, filePath, line, locations]',
+          locationFormat: '[line, column]',
         };
       }
       return results[0];
@@ -246,8 +244,8 @@ export const callHierarchyTool: Tool = {
         return {
           symbol: symbol,
           multipleMatches: true,
-          // Call format: [direction, name, kind, filePath, line, locations]
-          // where locations is an array of [line, column] pairs
+          callFormat: '[direction, name, kind, filePath, line, locations]',
+          locationFormat: '[line, column]',
           matches: results,
           summary: {
             totalMatches: results.length,

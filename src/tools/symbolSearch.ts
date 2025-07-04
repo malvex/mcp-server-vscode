@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
+import { searchWorkspaceSymbols } from './utils/symbolProvider';
 
 export const symbolSearchTool: Tool = {
   name: 'symbolSearch',
@@ -35,11 +36,8 @@ export const symbolSearchTool: Tool = {
   handler: async (args) => {
     const { query, kind = 'all', format = 'compact' } = args;
 
-    // Search for symbols
-    const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-      'vscode.executeWorkspaceSymbolProvider',
-      query
-    );
+    // Search for symbols (with cold start handling)
+    const symbols = await searchWorkspaceSymbols(query);
 
     if (!symbols || symbols.length === 0) {
       return { symbols: [] };
@@ -66,7 +64,7 @@ export const symbolSearchTool: Tool = {
 
     if (format === 'compact' && filteredSymbols.length > 0) {
       return {
-        // Symbol format: [name, kind, uri, line, containerName]
+        symbolFormat: '[name, kind, uri, line, containerName]',
         symbols: filteredSymbols.map((sym) => [
           sym.name,
           vscode.SymbolKind[sym.kind].toLowerCase(),

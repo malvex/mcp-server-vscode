@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
+import { searchWorkspaceSymbols, getDocumentSymbols } from './utils/symbolProvider';
 
 export const referencesTool: Tool = {
   name: 'references',
@@ -129,10 +130,7 @@ async function findReferencesBySymbol(
   const memberSymbol = parts[1];
 
   // Search for the symbol in the workspace
-  const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-    'vscode.executeWorkspaceSymbolProvider',
-    primarySymbol
-  );
+  const symbols = await searchWorkspaceSymbols(primarySymbol);
 
   if (!symbols || symbols.length === 0) {
     return {
@@ -165,10 +163,7 @@ async function findReferencesBySymbol(
         const document = await vscode.workspace.openTextDocument(sym.location.uri);
 
         // Get document symbols to find the member
-        const docSymbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-          'vscode.executeDocumentSymbolProvider',
-          document.uri
-        );
+        const docSymbols = await getDocumentSymbols(document);
 
         if (docSymbols) {
           // Find the class/container
@@ -261,12 +256,12 @@ async function findReferencesBySymbol(
     }
   }
 
-  // Add format comment for compact mode
+  // Add format description for compact mode
   if (format === 'compact' && allReferences.length > 0) {
     return {
       symbol: symbolName,
       totalReferences: allReferences.length,
-      // Reference format: [filePath, startLine, startColumn, endLine, endColumn]
+      referenceFormat: '[filePath, startLine, startColumn, endLine, endColumn]',
       references: allReferences,
     };
   }

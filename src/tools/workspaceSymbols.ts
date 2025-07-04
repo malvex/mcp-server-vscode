@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
+import { getDocumentSymbols } from './utils/symbolProvider';
 
 // Default code file extensions that support symbol extraction
 // Note: These must be individual patterns - VS Code glob doesn't support nested braces
@@ -173,7 +174,6 @@ export const workspaceSymbolsTool: Tool = {
       const symbolsByFile: Record<string, any[]> = {};
       let totalSymbols = 0;
       let skippedFiles = 0;
-      const successfullyParsedLanguages = new Set<string>();
 
       // Process each file
       for (const fileUri of files) {
@@ -214,51 +214,10 @@ export const workspaceSymbolsTool: Tool = {
             continue;
           }
 
-          // Get all symbols in this document
-          let symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-            'vscode.executeDocumentSymbolProvider',
-            document.uri
-          );
+          // Get all symbols in this document (with cold start handling)
+          const symbols = await getDocumentSymbols(document);
 
           const filePath = vscode.workspace.asRelativePath(fileUri);
-
-          // Handle cold start transparently: retry if symbols are null/undefined for known languages
-          // BUT only if we haven't already confirmed the language server is working
-          if (symbols === undefined || symbols === null) {
-            const knownLanguages = [
-              'typescript',
-              'javascript',
-              'python',
-              'java',
-              'csharp',
-              'go',
-              'rust',
-              'ruby',
-              'php',
-              'cpp',
-              'c',
-            ];
-
-            // Only retry if this is a known language AND we haven't successfully parsed any file of this type yet
-            if (
-              knownLanguages.includes(document.languageId) &&
-              !successfullyParsedLanguages.has(document.languageId)
-            ) {
-              // Progressive retry with increasing delays: 1s, 3s, 10s
-              const retryDelays = [1000, 3000, 10000];
-              for (let retry = 0; retry < retryDelays.length; retry++) {
-                await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
-                symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                  'vscode.executeDocumentSymbolProvider',
-                  document.uri
-                );
-                if (symbols !== undefined && symbols !== null) {
-                  break;
-                }
-              }
-            }
-            // If still null after retries (or we skipped retries), it stays null
-          }
 
           if (symbols && symbols.length > 0) {
             if (format === 'compact') {
@@ -267,8 +226,6 @@ export const workspaceSymbolsTool: Tool = {
               symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
             }
             totalSymbols += countSymbols(symbols);
-            // Mark this language as successfully parsed
-            successfullyParsedLanguages.add(document.languageId);
           } else if (symbols === undefined || symbols === null) {
             // Language server returned null/undefined - skip this file
             // Could be due to syntax errors or language server not ready
@@ -276,8 +233,6 @@ export const workspaceSymbolsTool: Tool = {
           } else {
             // Empty array means file was parsed but has no symbols - this is fine
             skippedFiles++;
-            // Mark language as successfully parsed even if no symbols found
-            successfullyParsedLanguages.add(document.languageId);
           }
         } catch (error) {
           // Skip files that can't be processed
@@ -289,7 +244,7 @@ export const workspaceSymbolsTool: Tool = {
       if (format === 'compact') {
         return {
           totalSymbols,
-          // Symbol format: [fullName, kind, line]
+          symbolFormat: '[fullName, kind, line]',
           symbols: symbolsByFile,
         };
       } else {
