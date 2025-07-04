@@ -14,7 +14,14 @@ suite('Execute Code Tool Tests', () => {
     await teardownTest(context);
     // Clean up any terminals created during tests
     terminalDisposables.forEach((d) => d.dispose());
-    vscode.window.terminals.forEach((t) => t.dispose());
+    // Only dispose terminals that still exist
+    vscode.window.terminals.forEach((t) => {
+      try {
+        t.dispose();
+      } catch {
+        // Ignore if already disposed
+      }
+    });
   });
 
   test('should send command to terminal', async () => {
@@ -53,8 +60,10 @@ suite('Execute Code Tool Tests', () => {
     );
   });
 
-  test.skip('should handle command with working directory', async () => {
-    // Skip because terminal disposal issues in test environment
+  test('should handle command with working directory', async () => {
+    // Wait for any previous terminal operations to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const result = await callTool('executeCode', {
       command: 'ls -la',
       cwd: '/tmp',

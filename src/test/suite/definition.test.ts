@@ -18,7 +18,7 @@ suite('Definition Tool Tests', () => {
     await teardownTest(context);
   });
 
-  test.skip('should find function definition from usage', async () => {
+  test('should find function definition from usage', async () => {
     const document = await openTestFile('app.ts');
 
     // Click on 'add' function call (line 4, character 38) - in the reduce callback
@@ -36,7 +36,7 @@ suite('Definition Tool Tests', () => {
     assert.strictEqual(def.range.start.line, 6, 'Should point to line 7 (add function)');
   });
 
-  test.skip('should find class definition from usage', async () => {
+  test('should find class definition from usage', async () => {
     const document = await openTestFile('app.ts');
 
     // Click on 'Calculator' in new Calculator() (line 9, character 20)
@@ -54,14 +54,14 @@ suite('Definition Tool Tests', () => {
     assert.strictEqual(def.range.start.line, 20, 'Should point to Calculator class definition');
   });
 
-  test.skip('should find method definition from usage', async () => {
+  test('should find method definition from usage', async () => {
     const document = await openTestFile('app.ts');
 
-    // Click on 'getResult' method call (line 13, character 20)
+    // Click on 'getResult' method call (line 13, character 22)
     const result = await callTool('definition', {
       uri: document.uri.toString(),
       line: 13,
-      character: 20,
+      character: 22,
     });
 
     assert.ok(result.definitions, 'Should return definitions');
@@ -72,7 +72,7 @@ suite('Definition Tool Tests', () => {
     assert.strictEqual(def.range.start.line, 34, 'Should point to getResult method');
   });
 
-  test.skip('should find import source', async () => {
+  test('should find import source', async () => {
     const document = await openTestFile('app.ts');
 
     // Click on './math' import path (line 0, character 45)
@@ -102,7 +102,7 @@ suite('Definition Tool Tests', () => {
     assert.strictEqual(result.definitions.length, 0, 'Should return empty array for comment');
   });
 
-  test.skip('should find local variable definition', async () => {
+  test('should find local variable definition', async () => {
     const document = await openTestFile('app.ts');
 
     // Click on 'calc' variable usage (line 11, character 3)

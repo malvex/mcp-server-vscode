@@ -19,26 +19,52 @@ export const definitionTool: Tool = {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
     const position = new vscode.Position(line, character);
 
-    const definitions = await vscode.commands.executeCommand<vscode.Location[]>(
-      'vscode.executeDefinitionProvider',
-      document.uri,
-      position
-    );
+    const definitions = await vscode.commands.executeCommand<
+      (vscode.Location | vscode.LocationLink)[]
+    >('vscode.executeDefinitionProvider', document.uri, position);
 
     if (!definitions || definitions.length === 0) {
       return { definitions: [] };
     }
 
-    return {
-      definitions: definitions
-        .filter((def) => def && def.uri && def.range) // Filter out malformed results
-        .map((def) => ({
-          uri: def.uri.toString(),
-          range: {
-            start: { line: def.range.start.line, character: def.range.start.character },
-            end: { line: def.range.end.line, character: def.range.end.character },
-          },
-        })),
-    };
+    // Handle both Location and LocationLink formats
+    const normalized = definitions
+      .map((def) => {
+        if ('targetUri' in def) {
+          // It's a LocationLink
+          return {
+            uri: def.targetUri.toString(),
+            range: {
+              start: {
+                line: def.targetRange.start.line,
+                character: def.targetRange.start.character,
+              },
+              end: {
+                line: def.targetRange.end.line,
+                character: def.targetRange.end.character,
+              },
+            },
+          };
+        } else if ('uri' in def) {
+          // It's a Location
+          return {
+            uri: def.uri.toString(),
+            range: {
+              start: {
+                line: def.range.start.line,
+                character: def.range.start.character,
+              },
+              end: {
+                line: def.range.end.line,
+                character: def.range.end.character,
+              },
+            },
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    return { definitions: normalized };
   },
 };

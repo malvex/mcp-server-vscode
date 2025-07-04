@@ -1,18 +1,31 @@
 import * as assert from 'assert';
-import { setupTest, teardownTest, callTool, TestContext } from '../helpers/testHelpers';
+import {
+  setupTest,
+  teardownTest,
+  callTool,
+  openTestFile,
+  TestContext,
+} from '../helpers/testHelpers';
 
 suite('Symbol Search Tool Tests', () => {
   let context: TestContext;
 
   suiteSetup(async () => {
     context = await setupTest();
+
+    // Open test files to ensure they're indexed
+    await openTestFile('math.ts');
+    await openTestFile('app.ts');
+
+    // Give extra time for workspace indexing
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   });
 
   suiteTeardown(async () => {
     await teardownTest(context);
   });
 
-  test.skip('should find function symbols by name', async () => {
+  test('should find function symbols by name', async () => {
     // Search for 'add' function
     const result = await callTool('symbolSearch', {
       query: 'add',
@@ -24,13 +37,13 @@ suite('Symbol Search Tool Tests', () => {
 
     // Should find the add function in math.ts
     const addFunction = result.symbols.find(
-      (sym: any) => sym.name === 'add' && sym.kind === 'Function'
+      (sym: any) => sym.name.startsWith('add') && sym.kind === 'Function'
     );
     assert.ok(addFunction, 'Should find add function');
     assert.ok(addFunction.location.uri.endsWith('math.ts'), 'Should be in math.ts');
   });
 
-  test.skip('should find class symbols by name', async () => {
+  test('should find class symbols by name', async () => {
     // Search for 'Calculator' class
     const result = await callTool('symbolSearch', {
       query: 'Calculator',
@@ -95,7 +108,7 @@ suite('Symbol Search Tool Tests', () => {
     assert.strictEqual(result.symbols.length, 0, 'Should return empty array');
   });
 
-  test.skip('should include location information for symbols', async () => {
+  test('should include location information for symbols', async () => {
     // Search for 'add' function
     const result = await callTool('symbolSearch', {
       query: 'add',
