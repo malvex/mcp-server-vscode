@@ -31,20 +31,28 @@ suite('Execute Code Tool Tests', () => {
     });
 
     assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Command sent to terminal', 'Should confirm command sent');
+    assert.strictEqual(
+      result.status,
+      'Command sent to dedicated terminal',
+      'Should confirm command sent'
+    );
     assert.strictEqual(result.command, 'echo "Hello from test"', 'Should return the command');
+    assert.ok(result.terminal, 'Should return terminal name');
 
     // Verify a terminal was created
     assert.ok(vscode.window.terminals.length > 0, 'Should have created a terminal');
   });
 
-  test('should use existing terminal if available', async () => {
-    // Create a terminal first
-    const existingTerminal = vscode.window.createTerminal('Test Terminal');
-    terminalDisposables.push(existingTerminal);
-    await vscode.window.showTextDocument(vscode.window.activeTextEditor!.document); // Ensure terminal is active
-
-    const initialTerminalCount = vscode.window.terminals.length;
+  test('should create dedicated MCP terminal', async () => {
+    // Clean up any existing terminals first
+    vscode.window.terminals.forEach((t) => {
+      try {
+        t.dispose();
+      } catch {
+        // Ignore disposal errors
+      }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const result = await callTool('executeCode', {
       format: 'detailed',
@@ -53,13 +61,11 @@ suite('Execute Code Tool Tests', () => {
 
     assert.ok(result.status, 'Should return status');
     assert.strictEqual(result.command, 'pwd', 'Should return the command');
+    assert.ok(result.terminal, 'Should return terminal name');
+    assert.ok(result.terminal.includes('MCP'), 'Terminal name should include MCP');
 
-    // Verify no new terminal was created
-    assert.strictEqual(
-      vscode.window.terminals.length,
-      initialTerminalCount,
-      'Should not create new terminal'
-    );
+    // Verify a terminal exists (reuse logic might apply)
+    assert.ok(vscode.window.terminals.length > 0, 'Should have at least one terminal');
   });
 
   test('should handle command with working directory', async () => {
@@ -73,7 +79,12 @@ suite('Execute Code Tool Tests', () => {
     });
 
     assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Command sent to terminal', 'Should confirm command sent');
+    assert.strictEqual(
+      result.status,
+      'Command sent to dedicated terminal',
+      'Should confirm command sent'
+    );
+    assert.strictEqual(result.cwd, '/tmp', 'Should show working directory');
   });
 
   test('should handle waitForOutput flag', async () => {
@@ -84,10 +95,15 @@ suite('Execute Code Tool Tests', () => {
     });
 
     assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Command executed', 'Should indicate command executed');
+    assert.strictEqual(
+      result.status,
+      'Command executed in dedicated terminal',
+      'Should indicate command executed'
+    );
+    assert.ok(result.terminal, 'Should return terminal name');
     assert.ok(result.note, 'Should include note about output capture');
     assert.ok(
-      result.note.includes('not fully implemented'),
+      result.note.includes('terminal data API'),
       'Should mention output capture limitation'
     );
   });
@@ -115,15 +131,37 @@ suite('Execute Code Tool Tests', () => {
     assert.strictEqual(result.command, complexCommand, 'Should return the exact command');
   });
 
-  test.skip('should create terminal with specific name', async () => {
-    // Skip because terminal disposal issues in test environment
+  test('should create terminal with specific name based on working directory', async () => {
+    // Clean up any existing terminals first
+    vscode.window.terminals.forEach((t) => {
+      try {
+        t.dispose();
+      } catch {
+        // Ignore disposal errors
+      }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Execute with specific working directory
     await callTool('executeCode', {
       format: 'detailed',
       command: 'echo "MCP test"',
+      cwd: '/tmp/testdir',
     });
 
-    const mcpTerminal = vscode.window.terminals.find((t) => t.name === 'MCP Execution');
-    assert.ok(mcpTerminal, 'Should create terminal with MCP Execution name');
+    // Terminal should be named "MCP (testdir)"
+    const mcpTerminal = vscode.window.terminals.find((t) => t.name === 'MCP (testdir)');
+    assert.ok(mcpTerminal, 'Should create terminal with directory-based name');
+
+    // Execute without working directory
+    await callTool('executeCode', {
+      format: 'detailed',
+      command: 'echo "MCP test default"',
+    });
+
+    // Should create "MCP Terminal" for default
+    const defaultTerminal = vscode.window.terminals.find((t) => t.name === 'MCP Terminal');
+    assert.ok(defaultTerminal, 'Should create terminal with default name');
   });
 
   // Clean up terminals after each test

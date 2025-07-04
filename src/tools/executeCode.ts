@@ -1,6 +1,18 @@
 import * as vscode from 'vscode';
 import { Tool } from './types';
 
+// Keep track of MCP terminals
+const mcpTerminals = new Map<string, vscode.Terminal>();
+
+// Clean up closed terminals
+vscode.window.onDidCloseTerminal((closedTerminal) => {
+  for (const [key, terminal] of mcpTerminals.entries()) {
+    if (terminal === closedTerminal) {
+      mcpTerminals.delete(key);
+    }
+  }
+});
+
 export const executeCodeTool: Tool = {
   name: 'executeCode',
   description: 'Execute code in VS Code integrated terminal or through Code Runner',
@@ -26,34 +38,44 @@ export const executeCodeTool: Tool = {
   handler: async (args) => {
     const { command, cwd, waitForOutput = false, format = 'compact' } = args;
 
-    // Get or create terminal
-    let terminal = vscode.window.activeTerminal;
+    // Determine terminal key based on working directory
+    const terminalKey = cwd || 'default';
+
+    // Check if we have an existing terminal for this working directory
+    let terminal = mcpTerminals.get(terminalKey);
+
+    // Create a new terminal if needed
     if (!terminal) {
+      const terminalName = cwd ? `MCP (${cwd.split('/').pop()})` : 'MCP Terminal';
       terminal = vscode.window.createTerminal({
-        name: 'MCP Execution',
+        name: terminalName,
         cwd: cwd,
       });
+      mcpTerminals.set(terminalKey, terminal);
     }
 
     terminal.show();
     terminal.sendText(command);
 
     if (waitForOutput) {
-      // This is a simplified version - in reality, capturing terminal output
-      // requires more complex integration with the terminal API
+      // VS Code's Terminal API doesn't provide direct output capture
+      // This would require extension APIs or terminal data write events
       return format === 'compact'
-        ? { executed: true, output: null }
+        ? { executed: true, terminal: terminal.name }
         : {
-            status: 'Command executed',
-            note: 'Output capture not fully implemented in MVP',
+            status: 'Command executed in dedicated terminal',
+            terminal: terminal.name,
+            note: 'Output capture requires terminal data API (not available in stable VS Code)',
           };
     }
 
     return format === 'compact'
-      ? { sent: true }
+      ? { sent: true, terminal: terminal.name }
       : {
-          status: 'Command sent to terminal',
+          status: 'Command sent to dedicated terminal',
           command: command,
+          terminal: terminal.name,
+          cwd: cwd || 'workspace root',
         };
   },
 };
