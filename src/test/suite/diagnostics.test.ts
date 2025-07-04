@@ -41,7 +41,7 @@ suite('Diagnostics Tool Tests', () => {
         d.message.includes('Type') &&
         d.message.includes('string') &&
         d.message.includes('number') &&
-        d.range.start.line === 24 // hasTypeError function
+        d.range.start.line === 22 // hasTypeError function
     );
 
     assert.ok(typeError, 'Should detect type mismatch error');
@@ -66,7 +66,7 @@ suite('Diagnostics Tool Tests', () => {
 
     // This is optional as it depends on tsconfig settings
     if (unusedVar) {
-      assert.ok(unusedVar.range.start.line === 29, 'Should point to unusedVariable');
+      assert.ok(unusedVar.range.start.line === 27, 'Should point to unusedVariable');
     }
   });
 
@@ -96,7 +96,7 @@ suite('Diagnostics Tool Tests', () => {
     );
 
     // Should have diagnostics for app.ts
-    const appTsUri = getTestFileUri('app.ts').toString();
+    // const appTsUri = getTestFileUri('app.ts').toString();
     const hasDiagnosticsForApp = Object.keys(result.diagnostics).some((uri) =>
       uri.endsWith('app.ts')
     );

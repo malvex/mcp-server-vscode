@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { HTTPBridge } from '../../mcp/http-bridge';
 
 export interface TestContext {
@@ -85,6 +84,10 @@ export async function callTool(toolName: string, args: any, port: number = 3001)
       res.on('data', (chunk) => (responseData += chunk));
       res.on('end', () => {
         try {
+          if (!responseData) {
+            reject(new Error('Empty response from HTTP bridge'));
+            return;
+          }
           const result = JSON.parse(responseData);
           if (result.error) {
             reject(new Error(result.error));
@@ -92,7 +95,8 @@ export async function callTool(toolName: string, args: any, port: number = 3001)
             resolve(result.result);
           }
         } catch (e) {
-          reject(e);
+          console.error('Failed to parse response:', responseData);
+          reject(new Error(`Failed to parse response: ${e}`));
         }
       });
     });

@@ -1,13 +1,16 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { createServer } from 'net';
-import { spawn, ChildProcess } from 'child_process';
-import * as vscode from 'vscode';
+const { Server } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
+const {
+  StdioServerTransport,
+} = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/stdio.js');
+const {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} = require('@modelcontextprotocol/sdk/dist/cjs/types.js');
+import { ChildProcess } from 'child_process';
 import { getTools } from '../tools';
 
 export class MCPServer {
-  private server: Server;
+  private server: any;
   private tcpServer: any;
   private childProcess?: ChildProcess;
   private port: number;
@@ -43,7 +46,7 @@ export class MCPServer {
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === request.params.name);
 

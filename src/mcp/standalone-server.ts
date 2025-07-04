@@ -1,11 +1,15 @@
 #!/usr/bin/env node
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import * as http from 'http';
+const { Server } = require('@modelcontextprotocol/sdk/dist/cjs/server/index.js');
+const {
+  StdioServerTransport,
+} = require('@modelcontextprotocol/sdk/dist/cjs/server/transports/stdio.js');
+const {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} = require('@modelcontextprotocol/sdk/dist/cjs/types.js');
+const http = require('http');
 
 const VSCODE_BRIDGE_PORT = process.env.VSCODE_BRIDGE_PORT || '3000';
-const VSCODE_BRIDGE_URL = `http://localhost:${VSCODE_BRIDGE_PORT}`;
 
 const server = new Server(
   {
@@ -36,19 +40,19 @@ async function callVSCodeBridge(
       },
     };
 
-    const req = http.request(options, (res) => {
+    const req = http.request(options, (res: any) => {
       let data = '';
-      res.on('data', (chunk) => (data += chunk));
+      res.on('data', (chunk: any) => (data += chunk));
       res.on('end', () => {
         try {
           resolve(JSON.parse(data));
-        } catch (e) {
+        } catch {
           resolve(data);
         }
       });
     });
 
-    req.on('error', (error) => {
+    req.on('error', (error: any) => {
       reject(
         new Error(
           `VS Code bridge not available. Make sure VS Code is running with the MCP extension and the server is started. Error: ${error.message}`
@@ -77,7 +81,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   }
 });
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   const { name, arguments: args } = request.params;
 
   try {
@@ -123,7 +127,7 @@ async function main() {
   try {
     const health = await callVSCodeBridge('/health');
     console.error(`Connected to VS Code bridge on port ${health.port}`);
-  } catch (error) {
+  } catch {
     console.error('Warning: VS Code bridge not available. Make sure to:');
     console.error('1. Open VS Code with the MCP extension project');
     console.error('2. Press F5 to launch the extension');
