@@ -49,35 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  // Test command to verify tools are working
-  const testToolCommand = vscode.commands.registerCommand('vscode-mcp.testTool', async () => {
-    const activeEditor = vscode.window.activeTextEditor;
-    if (!activeEditor) {
-      vscode.window.showErrorMessage('No active editor');
-      return;
-    }
-
-    const position = activeEditor.selection.active;
-
-    try {
-      // Test hover tool
-      const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
-        'vscode.executeHoverProvider',
-        activeEditor.document.uri,
-        position
-      );
-
-      if (hovers && hovers.length > 0) {
-        vscode.window.showInformationMessage('Hover info available at cursor position!');
-      } else {
-        vscode.window.showInformationMessage('No hover info at cursor position');
-      }
-    } catch (error) {
-      vscode.window.showErrorMessage(`Test failed: ${error}`);
-    }
-  });
-
-  context.subscriptions.push(startServerCommand, stopServerCommand, testToolCommand);
+  context.subscriptions.push(startServerCommand, stopServerCommand);
 
   // Auto-start server on activation
   vscode.commands.executeCommand('vscode-mcp.startServer');

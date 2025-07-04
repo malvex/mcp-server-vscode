@@ -22,10 +22,6 @@
       {
         "command": "vscode-mcp.stopServer",
         "title": "Stop MCP Server"
-      },
-      {
-        "command": "vscode-mcp.testTool",
-        "title": "Test MCP Tool at Cursor"
       }
     ],
     "configuration": {
