@@ -20,6 +20,9 @@ export async function setupTest(): Promise<TestContext> {
     throw new Error('No workspace folder found');
   }
 
+  // Wait for TypeScript extension to be ready
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
   return {
     httpBridge,
     workspaceUri: workspaceFolders[0].uri,
@@ -53,8 +56,8 @@ export async function openTestFile(filename: string): Promise<vscode.TextDocumen
   const document = await vscode.workspace.openTextDocument(uri);
   await vscode.window.showTextDocument(document);
 
-  // Wait a bit for language server to process
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Wait for language server to process the file
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   return document;
 }
@@ -84,18 +87,36 @@ export async function callTool(toolName: string, args: any, port: number = 3001)
       res.on('data', (chunk) => (responseData += chunk));
       res.on('end', () => {
         try {
+          console.log(`[callTool] Response status: ${res.statusCode}, data: ${responseData}`);
+
           if (!responseData) {
             reject(new Error('Empty response from HTTP bridge'));
             return;
           }
+
+          // Check HTTP status code first
+          if (res.statusCode !== 200) {
+            try {
+              const errorData = JSON.parse(responseData);
+              reject(new Error(errorData?.error || `HTTP ${res.statusCode}: ${responseData}`));
+            } catch {
+              reject(new Error(`HTTP ${res.statusCode}: ${responseData}`));
+            }
+            return;
+          }
+
           const result = JSON.parse(responseData);
-          if (result.error) {
+          if (result && result.error) {
             reject(new Error(result.error));
-          } else {
+          } else if (result && result.result !== undefined) {
             resolve(result.result);
+          } else {
+            // If the response doesn't have the expected structure
+            reject(new Error(`Unexpected response structure: ${responseData}`));
           }
         } catch (e) {
           console.error('Failed to parse response:', responseData);
+          console.error('Error details:', e);
           reject(new Error(`Failed to parse response: ${e}`));
         }
       });

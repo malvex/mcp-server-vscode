@@ -64,10 +64,14 @@ suite('Diagnostics Tool Tests', () => {
         (d.message.includes('declared') && d.message.includes('never'))
     );
 
-    // This is optional as it depends on tsconfig settings
-    if (unusedVar) {
-      assert.ok(unusedVar.range.start.line === 27, 'Should point to unusedVariable');
-    }
+    // Check that we found the unused variable diagnostic
+    assert.ok(unusedVar, 'Should find unused variable diagnostic');
+
+    // Find the specific unusedVariable diagnostic
+    const unusedVariableDiag = result.diagnostics.find((d: any) =>
+      d.message.includes("'unusedVariable'")
+    );
+    assert.ok(unusedVariableDiag, 'Should find unusedVariable diagnostic specifically');
   });
 
   test('should return empty array for file with no issues', async () => {

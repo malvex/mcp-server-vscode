@@ -45,21 +45,25 @@ export const referencesTool: Tool = {
 
       if (definitions && definitions.length > 0) {
         filteredRefs = references.filter((ref) => {
-          return !definitions.some(
-            (def) => def.uri.toString() === ref.uri.toString() && def.range.isEqual(ref.range)
-          );
+          if (!ref || !ref.uri || !ref.range) return true; // Keep malformed references
+          return !definitions.some((def) => {
+            if (!def || !def.uri || !def.range) return false;
+            return def.uri.toString() === ref.uri.toString() && def.range.isEqual(ref.range);
+          });
         });
       }
     }
 
     return {
-      references: filteredRefs.map((ref) => ({
-        uri: ref.uri.toString(),
-        range: {
-          start: { line: ref.range.start.line, character: ref.range.start.character },
-          end: { line: ref.range.end.line, character: ref.range.end.character },
-        },
-      })),
+      references: filteredRefs
+        .filter((ref) => ref && ref.uri && ref.range) // Filter out malformed results
+        .map((ref) => ({
+          uri: ref.uri.toString(),
+          range: {
+            start: { line: ref.range.start.line, character: ref.range.start.character },
+            end: { line: ref.range.end.line, character: ref.range.end.character },
+          },
+        })),
     };
   },
 };
