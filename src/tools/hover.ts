@@ -158,14 +158,29 @@ export const hoverTool: Tool = {
       };
     } else if (results.length === 1) {
       // For single match, return simplified format
+      if (format === 'compact') {
+        return {
+          ...results[0],
+          // Symbol format: [name, kind, filePath, line]
+        };
+      }
       return results[0];
     } else {
       // For multiple matches, return all
-      return {
-        symbol: symbol,
-        multipleMatches: true,
-        matches: results,
-      };
+      if (format === 'compact') {
+        return {
+          symbol: symbol,
+          multipleMatches: true,
+          // Symbol format: [name, kind, filePath, line]
+          matches: results,
+        };
+      } else {
+        return {
+          symbol: symbol,
+          multipleMatches: true,
+          matches: results,
+        };
+      }
     }
   },
 };

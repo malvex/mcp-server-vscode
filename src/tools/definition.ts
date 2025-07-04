@@ -281,17 +281,35 @@ async function findDefinitionBySymbol(
 
   // Return appropriate format based on number of matches
   if (allDefinitions.length === 1) {
-    return {
-      symbol: symbolName,
-      ...allDefinitions[0],
-      definitions: [allDefinitions[0]],
-    };
+    if (format === 'compact') {
+      return {
+        symbol: symbolName,
+        ...allDefinitions[0],
+        // Definition format - symbol: [name, kind, filePath, line], range: [startLine, startColumn, endLine, endColumn]
+        definitions: [allDefinitions[0]],
+      };
+    } else {
+      return {
+        symbol: symbolName,
+        ...allDefinitions[0],
+        definitions: [allDefinitions[0]],
+      };
+    }
   } else {
-    return {
-      symbol: symbolName,
-      multipleDefinitions: true,
-      definitions: allDefinitions,
-    };
+    if (format === 'compact') {
+      return {
+        symbol: symbolName,
+        multipleDefinitions: true,
+        // Definition format - symbol: [name, kind, filePath, line], range: [startLine, startColumn, endLine, endColumn]
+        definitions: allDefinitions,
+      };
+    } else {
+      return {
+        symbol: symbolName,
+        multipleDefinitions: true,
+        definitions: allDefinitions,
+      };
+    }
   }
 }
 

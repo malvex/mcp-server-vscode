@@ -289,6 +289,7 @@ export const workspaceSymbolsTool: Tool = {
       if (format === 'compact') {
         return {
           totalSymbols,
+          // Symbol format: [fullName, kind, line]
           symbols: symbolsByFile,
         };
       } else {

@@ -261,6 +261,16 @@ async function findReferencesBySymbol(
     }
   }
 
+  // Add format comment for compact mode
+  if (format === 'compact' && allReferences.length > 0) {
+    return {
+      symbol: symbolName,
+      totalReferences: allReferences.length,
+      // Reference format: [filePath, startLine, startColumn, endLine, endColumn]
+      references: allReferences,
+    };
+  }
+
   return {
     symbol: symbolName,
     totalReferences: allReferences.length,

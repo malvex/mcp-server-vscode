@@ -64,6 +64,19 @@ export const symbolSearchTool: Tool = {
       }
     }
 
+    if (format === 'compact' && filteredSymbols.length > 0) {
+      return {
+        // Symbol format: [name, kind, uri, line, containerName]
+        symbols: filteredSymbols.map((sym) => [
+          sym.name,
+          vscode.SymbolKind[sym.kind].toLowerCase(),
+          sym.location.uri.toString(),
+          sym.location.range.start.line,
+          sym.containerName || '',
+        ]),
+      };
+    }
+
     return {
       symbols:
         format === 'compact'

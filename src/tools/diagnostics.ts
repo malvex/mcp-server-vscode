@@ -85,6 +85,12 @@ export const diagnosticsTool: Tool = {
         }
       }
 
+      if (format === 'compact' && Object.keys(result).length > 0) {
+        return {
+          // Diagnostic format: [severity, message, startLine, startColumn, endLine, endColumn, source, code]
+          diagnostics: result,
+        };
+      }
       return { diagnostics: result };
     }
   },

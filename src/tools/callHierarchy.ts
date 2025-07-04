@@ -232,18 +232,39 @@ export const callHierarchyTool: Tool = {
       };
     } else if (results.length === 1) {
       // For single match, return simplified format
+      if (format === 'compact' && results[0].calls.length > 0) {
+        return {
+          ...results[0],
+          // Call format: [direction, name, kind, filePath, line, locations]
+          // where locations is an array of [line, column] pairs
+        };
+      }
       return results[0];
     } else {
       // For multiple matches, return all
-      return {
-        symbol: symbol,
-        multipleMatches: true,
-        matches: results,
-        summary: {
-          totalMatches: results.length,
-          totalCalls: results.reduce((sum, r) => sum + r.calls.length, 0),
-        },
-      };
+      if (format === 'compact') {
+        return {
+          symbol: symbol,
+          multipleMatches: true,
+          // Call format: [direction, name, kind, filePath, line, locations]
+          // where locations is an array of [line, column] pairs
+          matches: results,
+          summary: {
+            totalMatches: results.length,
+            totalCalls: results.reduce((sum, r) => sum + r.calls.length, 0),
+          },
+        };
+      } else {
+        return {
+          symbol: symbol,
+          multipleMatches: true,
+          matches: results,
+          summary: {
+            totalMatches: results.length,
+            totalCalls: results.reduce((sum, r) => sum + r.calls.length, 0),
+          },
+        };
+      }
     }
   },
 };
