@@ -29,8 +29,6 @@ import {
   refactor_renameTool,
   refactor_extractMethodTool,
   refactor_extractVariableTool,
-  refactor_rename_v2Tool,
-  refactor_extractMethod_v2Tool,
 } from './refactor';
 import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
@@ -63,13 +61,10 @@ export function getTools(): Tool[] {
     debug_inspectVariablesTool,
     debug_evaluateExpressionTool,
     debug_getOutputTool,
-    // Refactoring tools - Position-based (legacy)
+    // Refactoring tools
     refactor_renameTool,
     refactor_extractMethodTool,
     refactor_extractVariableTool,
-    // Refactoring tools - Symbol-based (AI-optimized)
-    refactor_rename_v2Tool,
-    refactor_extractMethod_v2Tool,
     // Other tools
     callHierarchyTool,
     symbolSearchTool,

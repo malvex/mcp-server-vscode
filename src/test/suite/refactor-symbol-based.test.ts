@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { setupTest, teardownTest, callTool, TestContext } from '../helpers/testHelpers';
 
-suite('Refactor Tools V2 Tests (Symbol-Based)', () => {
+suite('Refactor Tools Tests (Symbol-Based)', () => {
   let context: TestContext;
   const tempFiles: vscode.Uri[] = [];
 
@@ -63,7 +63,7 @@ export function processOrder() {
       await createTempFile('rename-test.ts', content);
 
       // Test renaming by symbol name only
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'calculateTotal',
         newName: 'computeSum',
       });
@@ -88,7 +88,7 @@ export function processOrder() {
       await createTempFile('suggestions-test.ts', content);
 
       // Test with misspelled symbol name
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'calculteTotal', // Missing 'a'
         newName: 'computeSum',
       });
@@ -118,7 +118,7 @@ export function processOrder() {
       await createTempFile('function-test.ts', content2);
 
       // Test with ambiguous symbol name
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'add',
         newName: 'sum',
       });
@@ -140,7 +140,7 @@ export function processOrder() {
       const uri = await createTempFile('uri-test.ts', content);
 
       // Test with URI to disambiguate
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'processData',
         newName: 'handleData',
         uri: uri.toString(),
@@ -173,7 +173,7 @@ export function processOrder() {
       await createTempFile('extract-test.ts', content);
 
       // Test extracting by function name and code pattern
-      const result = await callTool('refactor_extractMethod_v2', {
+      const result = await callTool('refactor_extractMethod', {
         containingFunction: 'processOrder',
         codePattern: 'if (!orderId)',
         methodName: 'validateOrder',
@@ -198,7 +198,7 @@ export function processOrder() {
 
       await createTempFile('notfound-test.ts', content);
 
-      const result = await callTool('refactor_extractMethod_v2', {
+      const result = await callTool('refactor_extractMethod', {
         containingFunction: 'simpleFunction',
         codePattern: 'nonexistent code',
         methodName: 'extracted',
@@ -210,7 +210,7 @@ export function processOrder() {
     });
 
     test('should handle function not found with helpful error', async () => {
-      const result = await callTool('refactor_extractMethod_v2', {
+      const result = await callTool('refactor_extractMethod', {
         containingFunction: 'nonExistentFunction',
         codePattern: 'some code',
         methodName: 'extracted',
@@ -227,7 +227,7 @@ export function processOrder() {
       const content = `export const PI = 3.14159;`;
       await createTempFile('compact-test.ts', content);
 
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'PI',
         newName: 'MATH_PI',
       });
@@ -243,7 +243,7 @@ export function processOrder() {
       const content = `export const PI = 3.14159;`;
       await createTempFile('detailed-test.ts', content);
 
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'PI',
         newName: 'MATH_PI',
         format: 'detailed',
@@ -269,7 +269,7 @@ export function loadData() {
 
       await createTempFile('external-test.ts', content);
 
-      const result = await callTool('refactor_rename_v2', {
+      const result = await callTool('refactor_rename', {
         symbol: 'readFile',
         newName: 'readFileSync',
       });
@@ -287,13 +287,13 @@ export function loadData() {
 
     test('should validate required parameters', async () => {
       // Missing newName
-      const result1 = await callTool('refactor_rename_v2', {
+      const result1 = await callTool('refactor_rename', {
         symbol: 'someSymbol',
       });
       assert.ok(result1.error, 'Should error on missing newName');
 
       // Missing symbol
-      const result2 = await callTool('refactor_rename_v2', {
+      const result2 = await callTool('refactor_rename', {
         newName: 'newName',
       });
       assert.ok(result2.error, 'Should error on missing symbol');
