@@ -165,6 +165,7 @@ export const workspaceSymbolsTool: Tool = {
 
       const symbolsByFile: Record<string, any[]> = {};
       let totalSymbols = 0;
+      let skippedFiles = 0;
 
       // Process each file
       for (const fileUri of files) {
@@ -217,8 +218,10 @@ export const workspaceSymbolsTool: Tool = {
             symbolsByFile[filePath] = processDocumentSymbols(symbols, includeDetails);
             totalSymbols += countSymbols(symbols);
           } else {
-            // Still include the file even if it has no symbols
-            symbolsByFile[filePath] = [];
+            // Skip files with no symbols - they just clutter the output
+            // VS Code returns empty array when it can parse but finds no symbols
+            // VS Code returns undefined/null when no language server is available
+            skippedFiles++;
           }
         } catch (error) {
           // Skip files that can't be processed
@@ -231,6 +234,7 @@ export const workspaceSymbolsTool: Tool = {
         totalFiles: Object.keys(symbolsByFile).length,
         totalSymbols: totalSymbols,
         byKind: countSymbolsByKind(symbolsByFile),
+        skippedFiles: skippedFiles,
       };
 
       return {

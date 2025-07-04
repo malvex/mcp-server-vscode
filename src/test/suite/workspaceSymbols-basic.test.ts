@@ -12,7 +12,7 @@ suite('Workspace Symbols Basic Tests', () => {
     await teardownTest(context);
   });
 
-  test('should return code files when called with empty object', async () => {
+  test('should return code files with symbols when called with empty object', async () => {
     // Call with empty object (no parameters)
     const result = await callTool('workspaceSymbols', {});
 
@@ -25,12 +25,20 @@ suite('Workspace Symbols Basic Tests', () => {
     assert.ok(fileCount > 0, `Should find code files, but found ${fileCount} files`);
 
     console.log(`Found ${fileCount} code files with default behavior`);
-    console.log(
-      'File types found:',
-      Object.keys(result.files)
-        .map((f) => f.split('.').pop())
-        .filter((v, i, a) => a.indexOf(v) === i)
-    );
+
+    // All returned files should have symbols (empty arrays are skipped)
+    for (const [file, symbols] of Object.entries(result.files)) {
+      assert.ok(Array.isArray(symbols), `File ${file} should have symbols array`);
+      assert.ok(symbols.length > 0, `File ${file} should have at least one symbol`);
+    }
+
+    // Check that we skipped files without symbols
+    if (result.summary.skippedFiles > 0) {
+      console.log(`Skipped ${result.summary.skippedFiles} files with no symbols`);
+    }
+
+    // The tool should only return files with actual symbols
+    assert.ok(result.summary.totalSymbols > 0, 'Should have found symbols');
   });
 
   test('should find TypeScript files in test workspace', async () => {
