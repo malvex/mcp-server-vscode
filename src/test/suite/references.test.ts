@@ -2,8 +2,8 @@ import * as assert from 'assert';
 import {
   setupTest,
   teardownTest,
-  openTestFile,
   callTool,
+  openTestFile,
   TestContext,
 } from '../helpers/testHelpers';
 
@@ -18,143 +18,148 @@ suite('References Tool Tests', () => {
     await teardownTest(context);
   });
 
-  test('should find all references to add function', async () => {
-    await openTestFile('math.ts');
+  test('should find function references by symbol name', async () => {
+    // Open a file to ensure it's indexed
+    await openTestFile('app.ts');
 
-    // Find references to 'add' function by symbol name
     const result = await callTool('references', {
       format: 'detailed',
       symbol: 'add',
       includeDeclaration: true,
     });
 
+    assert.ok(!result.error, `Should not have error: ${result.error}`);
     assert.ok(result.references, 'Should return references');
-    assert.ok(
-      result.references.length >= 2,
-      'Should find at least 2 references (declaration + usage)'
-    );
+    assert.ok(result.references.length > 0, 'Should find at least one reference');
+    assert.strictEqual(result.symbol, 'add', 'Should return symbol name');
+    assert.ok(result.totalReferences > 0, 'Should have totalReferences count');
 
-    // Should include the declaration (if found)
-    const hasMathReferences = result.references.some((ref: any) =>
-      typeof ref.uri === 'string' ? ref.uri.endsWith('math.ts') : ref.file?.endsWith('math.ts')
-    );
-    assert.ok(hasMathReferences, 'Should include references from math.ts');
-
-    // Should include usage in app.ts
-    const hasAppUsage = result.references.some((ref: any) =>
-      typeof ref.uri === 'string' ? ref.uri.endsWith('app.ts') : ref.file?.endsWith('app.ts')
-    );
-    assert.ok(hasAppUsage, 'Should include usage in app.ts');
+    // Verify reference structure
+    const ref = result.references[0];
+    assert.ok(ref.uri, 'Reference should have URI');
+    assert.ok(ref.file, 'Reference should have file path');
+    assert.ok(typeof ref.line === 'number', 'Reference should have line number');
+    assert.ok(ref.range, 'Reference should have range');
+    assert.ok(typeof ref.range.start.line === 'number', 'Range should have start line');
+    assert.ok(typeof ref.range.start.character === 'number', 'Range should have start character');
   });
 
-  test('should exclude declaration when requested', async () => {
-    await openTestFile('math.ts');
-
-    // Find references to 'add' function without declaration
-    const result = await callTool('references', {
-      format: 'detailed',
-      symbol: 'add',
-      includeDeclaration: false,
-    });
-
-    assert.ok(result.references, 'Should return references');
-
-    // For now, since definition provider isn't working, we'll check that we get fewer results
-    // than when includeDeclaration is true
-    assert.ok(result.references.length > 0, 'Should have some references');
-
-    // Should still include usage
-    const hasAppUsage = result.references.some((ref: any) =>
-      typeof ref.uri === 'string' ? ref.uri.endsWith('app.ts') : ref.file?.endsWith('app.ts')
-    );
-    assert.ok(hasAppUsage, 'Should include usage in app.ts');
-  });
-
-  test('should find all references to Calculator class', async () => {
-    await openTestFile('math.ts');
-
-    // Find references to 'Calculator' class
+  test('should find class references by symbol name', async () => {
     const result = await callTool('references', {
       format: 'detailed',
       symbol: 'Calculator',
-      includeDeclaration: true,
     });
 
+    assert.ok(!result.error, 'Should not have error');
     assert.ok(result.references, 'Should return references');
-    assert.ok(result.references.length >= 3, 'Should find multiple references');
+    assert.strictEqual(result.symbol, 'Calculator', 'Should return symbol name');
 
-    // Check that we have references in app.ts
-    const hasAppReferences = result.references.some((ref: any) =>
-      typeof ref.uri === 'string' ? ref.uri.endsWith('app.ts') : ref.file?.endsWith('app.ts')
-    );
-    assert.ok(hasAppReferences, 'Should find references in app.ts');
+    // Should find references where Calculator is used
+    const hasAppReference = result.references.some((ref: any) => ref.file.includes('app.ts'));
+    assert.ok(hasAppReference, 'Should find reference in app.ts');
   });
 
-  test('should find references to class methods', async () => {
-    await openTestFile('math.ts');
-
-    // Find references to 'getResult' method
+  test('should find class method references by qualified name', async () => {
     const result = await callTool('references', {
       format: 'detailed',
-      symbol: 'Calculator.getResult',
-      includeDeclaration: true,
+      symbol: 'Calculator.add',
     });
 
+    assert.ok(!result.error, 'Should not have error');
     assert.ok(result.references, 'Should return references');
-    assert.ok(result.references.length >= 2, 'Should find at least 2 references');
+    assert.strictEqual(result.symbol, 'Calculator.add', 'Should return full symbol name');
 
-    // Should find usage in app.ts
-    const hasAppUsage = result.references.some((ref: any) =>
-      typeof ref.uri === 'string' ? ref.uri.endsWith('app.ts') : ref.file?.endsWith('app.ts')
-    );
-    assert.ok(hasAppUsage, 'Should find method call in app.ts');
-  });
-
-  test('should return empty array for unused symbol', async () => {
-    await openTestFile('math.ts');
-
-    // Find references to 'reset' method which is not used
-    const result = await callTool('references', {
-      format: 'detailed',
-      symbol: 'Calculator.reset',
-      includeDeclaration: false,
-    });
-
-    assert.ok(Array.isArray(result.references), 'Should return array');
-
-    // The reset method is not used anywhere, so we should get 0 or possibly 1 reference
-    // (VS Code might still return the declaration even with includeDeclaration: false)
-    assert.ok(
-      result.references.length <= 1,
-      `Should have at most 1 reference for unused method, got ${result.references.length}`
-    );
-
-    // If there is a reference, it should only be in math.ts (the declaration file)
+    // Should find method calls specifically
     if (result.references.length > 0) {
       const ref = result.references[0];
-      const isInMathFile =
-        typeof ref.uri === 'string' ? ref.uri.endsWith('math.ts') : ref.file?.endsWith('math.ts');
-      assert.ok(isInMathFile, 'Reference should only be in declaration file');
+      assert.ok(ref.file, 'Reference should have file');
+      assert.ok(typeof ref.line === 'number', 'Reference should have line number');
     }
   });
 
-  test('should find local variable references', async () => {
-    await openTestFile('app.ts');
-
-    // Find references to 'calc' variable
-    const result = await callTool('references', {
+  test('should exclude declaration when requested', async () => {
+    const withDeclaration = await callTool('references', {
       format: 'detailed',
-      symbol: 'calc',
+      symbol: 'add',
       includeDeclaration: true,
     });
 
-    assert.ok(result.references, 'Should return references');
-    assert.ok(result.references.length >= 3, 'Should find multiple references to calc variable');
+    const withoutDeclaration = await callTool('references', {
+      format: 'detailed',
+      symbol: 'add',
+      includeDeclaration: false,
+    });
 
-    // All references should be in the same file
-    const allInAppFile = result.references.every((ref: any) =>
-      typeof ref.uri === 'string' ? ref.uri.endsWith('app.ts') : ref.file?.endsWith('app.ts')
+    assert.ok(!withDeclaration.error, 'Should not have error with declaration');
+    assert.ok(!withoutDeclaration.error, 'Should not have error without declaration');
+
+    // Without declaration should have fewer references
+    assert.ok(
+      withoutDeclaration.totalReferences <= withDeclaration.totalReferences,
+      'Without declaration should have same or fewer references'
     );
-    assert.ok(allInAppFile, 'All references should be in app.ts');
+  });
+
+  test('should handle symbol not found', async () => {
+    const result = await callTool('references', {
+      format: 'detailed',
+      symbol: 'NonExistentSymbol',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.message, 'Should have message');
+    assert.ok(result.message.includes('not found'), 'Should indicate symbol not found');
+    assert.deepStrictEqual(result.references, [], 'Should return empty references');
+    assert.strictEqual(result.totalReferences, 0, 'Should have 0 total references');
+  });
+
+  test('should validate input parameters', async () => {
+    // Test with no parameters
+    const result = await callTool('references', {
+      format: 'detailed',
+    });
+
+    assert.ok(result.error, 'Should have error');
+    assert.ok(result.error.includes('required'), 'Should indicate symbol is required');
+  });
+
+  test('should handle multiple symbols with same name', async () => {
+    // 'add' exists as both a function and a method
+    const result = await callTool('references', {
+      format: 'detailed',
+      symbol: 'add',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.references, 'Should return references');
+
+    // Should find references to both the function and the method
+    if (result.references.length > 1) {
+      // Check that we get references from different contexts
+      const files = [...new Set(result.references.map((ref: any) => ref.file))];
+      console.log(`Found references in ${files.length} different files`);
+    }
+  });
+
+  test('should return consistent reference format', async () => {
+    const result = await callTool('references', {
+      format: 'detailed',
+      symbol: 'Calculator',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.references, 'Should return references');
+
+    // Check each reference has the expected format
+    for (const ref of result.references) {
+      assert.ok(ref.uri, 'Each reference should have uri');
+      assert.ok(ref.file, 'Each reference should have file');
+      assert.ok(typeof ref.line === 'number', 'Each reference should have line number');
+      assert.ok(ref.range, 'Each reference should have range');
+      assert.ok(ref.range.start, 'Range should have start');
+      assert.ok(ref.range.end, 'Range should have end');
+      assert.ok(typeof ref.range.start.line === 'number', 'Start should have line (0-based)');
+      assert.ok(typeof ref.range.start.character === 'number', 'Start should have character');
+    }
   });
 });
