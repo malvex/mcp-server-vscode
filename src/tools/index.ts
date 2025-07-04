@@ -25,11 +25,7 @@ import {
   debug_evaluateExpressionTool,
   debug_getOutputTool,
 } from './debug';
-import {
-  refactor_renameTool,
-  refactor_extractMethodTool,
-  refactor_extractVariableTool,
-} from './refactor';
+import { refactor_renameTool } from './refactor';
 import { callHierarchyTool } from './callHierarchy';
 import { symbolSearchTool } from './symbolSearch';
 // import { executeCodeTool } from './executeCode';  // Commented out - redundant tool
@@ -63,8 +59,6 @@ export function getTools(): Tool[] {
     debug_getOutputTool,
     // Refactoring tools
     refactor_renameTool,
-    refactor_extractMethodTool,
-    refactor_extractVariableTool,
     // Other tools
     callHierarchyTool,
     symbolSearchTool,
