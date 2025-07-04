@@ -227,3 +227,40 @@ async function ensureLanguageServersReady(): Promise<void> {
     }
   }
 }
+
+export async function findSymbolInWorkspace(
+  symbolName: string
+): Promise<vscode.SymbolInformation[]> {
+  // Use searchWorkspaceSymbols for cold start handling
+  let symbols = await searchWorkspaceSymbols(symbolName);
+
+  // Filter for exact matches
+  symbols = symbols.filter((s) => {
+    // For method notation like "ClassName.methodName"
+    if (symbolName.includes('.')) {
+      const [className, methodName] = symbolName.split('.');
+      // Handle both "methodName" and "methodName()"
+      const nameMatch =
+        s.name === methodName ||
+        s.name === methodName + '()' ||
+        s.name === methodName.replace('()', '');
+      return nameMatch && s.containerName === className;
+    }
+    // For simple names - handle both with and without parentheses
+    return (
+      s.name === symbolName ||
+      s.name === symbolName + '()' ||
+      s.name === symbolName.replace('()', '')
+    );
+  });
+
+  // If no exact match and contains dot, try just the method name
+  if (symbols.length === 0 && symbolName.includes('.')) {
+    const methodName = symbolName.split('.').pop()!;
+    const className = symbolName.split('.')[0];
+    symbols = await searchWorkspaceSymbols(methodName);
+    symbols = symbols.filter((s) => s.name === methodName && s.containerName === className);
+  }
+
+  return symbols;
+}

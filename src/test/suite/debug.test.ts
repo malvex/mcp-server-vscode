@@ -17,184 +17,340 @@ suite('Debug Tool Tests', () => {
 
   suiteTeardown(async () => {
     await teardownTest(context);
-    // Ensure debugging is stopped after tests
+    // Ensure debugging is stopped and breakpoints cleared
     try {
       await vscode.debug.stopDebugging();
     } catch {
       // Ignore errors if no debug session
     }
-  });
-
-  test.skip('should set a breakpoint by symbol name', async () => {
-    // Open a file to ensure symbols are available
-    await openTestFile('app.ts');
-
-    // Clear all breakpoints first
     vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
-
-    // Set breakpoint using symbol name (AI-friendly approach)
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'setBreakpoint',
-      symbol: 'calculateSum',
-    });
-
-    assert.ok(!result.error, 'Should not have error');
-    assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Breakpoint added', 'Should confirm breakpoint added');
-    assert.ok(result.symbol, 'Should include symbol name');
-    assert.ok(typeof result.line === 'number', 'Should return line number');
-
-    // Verify breakpoint was actually added
-    const breakpoints = vscode.debug.breakpoints;
-    assert.ok(breakpoints.length > 0, 'Should have at least one breakpoint');
   });
 
-  test.skip('should set a breakpoint by position', async () => {
-    const document = await openTestFile('app.ts');
-
-    // Set breakpoint on line 5 (calculateSum function)
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'setBreakpoint',
-      uri: document.uri.toString(),
-      line: 4, // 0-based line number
-    });
-
-    assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Breakpoint added', 'Should confirm breakpoint added');
-    assert.strictEqual(result.line, 4, 'Should return line number');
-
-    // Verify breakpoint was actually added
-    const breakpoints = vscode.debug.breakpoints;
-    const hasBreakpoint = breakpoints.some((bp) => {
-      if (bp instanceof vscode.SourceBreakpoint) {
-        return (
-          bp.location.uri.toString() === document.uri.toString() &&
-          bp.location.range.start.line === 4
-        );
-      }
-      return false;
-    });
-    assert.ok(hasBreakpoint, 'Breakpoint should exist in VS Code');
-  });
-
-  test.skip('should remove a breakpoint', async () => {
-    const document = await openTestFile('app.ts');
-
-    // Clear all breakpoints first
-    vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
-
-    // First set a breakpoint
-    await callTool('debug', {
-      format: 'detailed',
-      action: 'setBreakpoint',
-      uri: document.uri.toString(),
-      line: 10,
-    });
-
-    // Then remove it
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'removeBreakpoint',
-      uri: document.uri.toString(),
-      line: 10,
-    });
-
-    assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Breakpoint removed', 'Should confirm breakpoint removed');
-    assert.strictEqual(result.line, 10, 'Should return line number');
-
-    // Verify breakpoint was actually removed
-    const breakpoints = vscode.debug.breakpoints;
-    const hasBreakpoint = breakpoints.some((bp) => {
-      if (bp instanceof vscode.SourceBreakpoint) {
-        return (
-          bp.location.uri.toString() === document.uri.toString() &&
-          bp.location.range.start.line === 10
-        );
-      }
-      return false;
-    });
-    assert.ok(!hasBreakpoint, 'Breakpoint should not exist in VS Code');
-  });
-
-  test.skip('should handle setBreakpoint without required parameters', async () => {
-    try {
-      await callTool('debug', {
-        format: 'detailed',
-        action: 'setBreakpoint',
-        // Missing uri and line
-      });
-      assert.fail('Should throw error for missing parameters');
-    } catch (error: any) {
-      assert.ok(
-        error.message.includes('Either provide a symbol name OR uri with line'),
-        'Should mention missing parameters'
-      );
-    }
-  });
-
-  test.skip('should handle removeBreakpoint without required parameters', async () => {
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'removeBreakpoint',
-      // Missing uri and line
-    });
-
-    assert.ok(result.error, 'Should return error');
-    assert.ok(result.error.includes('URI and line required'), 'Should mention missing parameters');
-  });
-
-  test.skip('should start debug session with default config', async () => {
-    // This test is skipped because it requires launch.json configuration
-    // and actually starts a debug session which may interfere with tests
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'start',
-    });
-
-    assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Debug session started', 'Should confirm session started');
-  });
-
-  test.skip('should stop debug session', async () => {
-    // This test is skipped because it requires an active debug session
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'stop',
-    });
-
-    assert.ok(result.status, 'Should return status');
-    assert.strictEqual(result.status, 'Debug session stopped', 'Should confirm session stopped');
-  });
-
-  test.skip('should handle unknown debug action', async () => {
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'unknownAction',
-    });
-
-    assert.ok(result.error, 'Should return error');
-    assert.ok(result.error.includes('Unknown debug action'), 'Should mention unknown action');
-  });
-
-  test.skip('should indicate getVariables is not implemented', async () => {
-    const result = await callTool('debug', {
-      format: 'detailed',
-      action: 'getVariables',
-    });
-
-    assert.ok(result.status, 'Should return status');
-    assert.ok(result.status.includes('not yet implemented'), 'Should indicate not implemented');
-    assert.ok(result.note, 'Should include implementation note');
-  });
-
-  // Cleanup after each test to remove any breakpoints
+  // Clean up after each test
   teardown(async () => {
+    // Remove all breakpoints
     const allBreakpoints = vscode.debug.breakpoints;
     if (allBreakpoints.length > 0) {
       vscode.debug.removeBreakpoints(allBreakpoints);
     }
+    // Stop any active debug sessions
+    if (vscode.debug.activeDebugSession) {
+      await vscode.debug.stopDebugging();
+    }
+  });
+
+  test('should list all breakpoints', async () => {
+    const document = await openTestFile('app.ts');
+
+    // Set a few breakpoints manually
+    const bp1 = new vscode.SourceBreakpoint(
+      new vscode.Location(document.uri, new vscode.Position(4, 0))
+    );
+    const bp2 = new vscode.SourceBreakpoint(
+      new vscode.Location(document.uri, new vscode.Position(10, 0))
+    );
+    vscode.debug.addBreakpoints([bp1, bp2]);
+
+    // Call the tool to list breakpoints
+    const result = await callTool('debug', {
+      action: 'listBreakpoints',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(Array.isArray(result.breakpoints), 'Should return array of breakpoints');
+    assert.strictEqual(result.breakpoints.length, 2, 'Should have 2 breakpoints');
+
+    // Check breakpoint structure
+    const firstBp = result.breakpoints[0];
+    assert.ok(firstBp.file.endsWith('app.ts'), 'Should include file name');
+    assert.strictEqual(firstBp.line, 4, 'Should have correct line number (0-based)');
+  });
+
+  test('should clear all breakpoints', async () => {
+    const document = await openTestFile('app.ts');
+
+    // Set some breakpoints
+    const bp = new vscode.SourceBreakpoint(
+      new vscode.Location(document.uri, new vscode.Position(5, 0))
+    );
+    vscode.debug.addBreakpoints([bp]);
+
+    assert.ok(vscode.debug.breakpoints.length > 0, 'Should have breakpoints before clear');
+
+    // Clear all breakpoints
+    const result = await callTool('debug', {
+      action: 'clearBreakpoints',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.strictEqual(result.status, 'All breakpoints cleared', 'Should confirm cleared');
+    assert.strictEqual(vscode.debug.breakpoints.length, 0, 'Should have no breakpoints');
+  });
+
+  test('should set breakpoint by symbol name', async () => {
+    await openTestFile('app.ts');
+
+    const result = await callTool('debug', {
+      action: 'setBreakpoint',
+      symbol: 'calculateSum',
+      format: 'detailed',
+    });
+
+    console.log('Set breakpoint by symbol result:', JSON.stringify(result, null, 2));
+    assert.ok(!result.error, `Should not have error: ${result.error}`);
+    assert.ok(result.breakpoint, 'Should return breakpoint info');
+    assert.strictEqual(result.breakpoint.symbol, 'calculateSum', 'Should have symbol name');
+    assert.ok(result.breakpoint.file.endsWith('app.ts'), 'Should be in app.ts');
+    assert.ok(typeof result.breakpoint.line === 'number', 'Should have line number');
+
+    // Verify breakpoint exists
+    const breakpoints = vscode.debug.breakpoints;
+    assert.ok(breakpoints.length > 0, 'Should have at least one breakpoint');
+  });
+
+  test('should set breakpoint with condition', async () => {
+    await openTestFile('app.ts');
+
+    const result = await callTool('debug', {
+      action: 'setBreakpoint',
+      symbol: 'calculateSum',
+      condition: 'numbers.length > 5',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.breakpoint, 'Should return breakpoint info');
+    assert.strictEqual(result.breakpoint.condition, 'numbers.length > 5', 'Should have condition');
+
+    // Verify breakpoint has condition
+    const bp = vscode.debug.breakpoints[0] as vscode.SourceBreakpoint;
+    assert.strictEqual(bp.condition, 'numbers.length > 5', 'Breakpoint should have condition');
+  });
+
+  test('should set breakpoint by file and line', async () => {
+    await openTestFile('app.ts');
+
+    const result = await callTool('debug', {
+      action: 'setBreakpoint',
+      file: 'app.ts',
+      line: 9,
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.breakpoint, 'Should return breakpoint info');
+    assert.ok(result.breakpoint.file.endsWith('app.ts'), 'Should be in app.ts');
+    assert.strictEqual(result.breakpoint.line, 9, 'Should have correct line');
+  });
+
+  test('should handle symbol not found', async () => {
+    await openTestFile('app.ts');
+
+    const result = await callTool('debug', {
+      action: 'setBreakpoint',
+      symbol: 'nonExistentFunction',
+      format: 'detailed',
+    });
+
+    assert.ok(result.error, 'Should have error');
+    assert.ok(result.error.includes('not found'), 'Should mention symbol not found');
+    assert.ok(result.suggestions, 'Should provide suggestions');
+    assert.ok(Array.isArray(result.suggestions), 'Suggestions should be array');
+  });
+
+  test('should toggle breakpoint', async () => {
+    await openTestFile('app.ts');
+
+    // First call should set breakpoint
+    const result1 = await callTool('debug', {
+      action: 'toggleBreakpoint',
+      symbol: 'calculateSum',
+      format: 'detailed',
+    });
+
+    assert.ok(!result1.error, 'Should not have error');
+    assert.strictEqual(result1.action, 'added', 'Should add breakpoint');
+    assert.strictEqual(vscode.debug.breakpoints.length, 1, 'Should have 1 breakpoint');
+
+    // Second call should remove breakpoint
+    const result2 = await callTool('debug', {
+      action: 'toggleBreakpoint',
+      symbol: 'calculateSum',
+      format: 'detailed',
+    });
+
+    assert.ok(!result2.error, 'Should not have error');
+    assert.strictEqual(result2.action, 'removed', 'Should remove breakpoint');
+    assert.strictEqual(vscode.debug.breakpoints.length, 0, 'Should have 0 breakpoints');
+  });
+
+  test('should show help information', async () => {
+    const result = await callTool('debug', {
+      action: 'help',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.description, 'Should have description');
+    assert.ok(result.actions, 'Should have actions list');
+    assert.ok(result.actions.setBreakpoint, 'Should document setBreakpoint action');
+    assert.ok(result.actions.setBreakpoint.examples, 'Should include examples');
+    assert.ok(result.formats, 'Should document available formats');
+  });
+
+  test('should list breakpoints with conditions in compact format', async () => {
+    await openTestFile('app.ts');
+
+    // Set a conditional breakpoint
+    const setBpResult = await callTool('debug', {
+      action: 'setBreakpoint',
+      symbol: 'calculateSum',
+      condition: 'numbers.length > 10',
+      format: 'detailed',
+    });
+
+    assert.ok(!setBpResult.error, 'Should set conditional breakpoint');
+
+    // List breakpoints in compact format
+    const result = await callTool('debug', {
+      action: 'listBreakpoints',
+      format: 'compact',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.bpFormat, 'Should include format description');
+    assert.ok(result.bpFormat.includes('condition?'), 'Format should indicate optional condition');
+    assert.ok(result.bps, 'Should have breakpoints array');
+
+    // Find the breakpoint with condition
+    const bpWithCondition = result.bps.find((bp: any) => bp.length === 4);
+    assert.ok(bpWithCondition, 'Should have breakpoint with condition');
+    assert.strictEqual(
+      bpWithCondition[3].condition,
+      'numbers.length > 10',
+      'Should include condition'
+    );
+  });
+
+  test('should get debug configurations', async () => {
+    const result = await callTool('debug', {
+      action: 'listConfigurations',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(Array.isArray(result.configurations), 'Should return array of configurations');
+    assert.ok(result.configurations.length > 0, 'Should have at least one configuration');
+
+    const config = result.configurations[0];
+    assert.ok(config.name, 'Configuration should have name');
+    assert.ok(config.type, 'Configuration should have type');
+  });
+
+  test('should provide debug status', async () => {
+    const result = await callTool('debug', {
+      action: 'status',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.status, 'Should have status object');
+    assert.ok(typeof result.status.isActive === 'boolean', 'Should have isActive flag');
+    assert.ok(typeof result.status.breakpointCount === 'number', 'Should have breakpoint count');
+    assert.ok(Array.isArray(result.status.configurations), 'Should have configurations list');
+  });
+
+  test('should handle compact format', async () => {
+    await openTestFile('app.ts');
+
+    const result = await callTool('debug', {
+      action: 'setBreakpoint',
+      symbol: 'calculateSum',
+      format: 'compact',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.bpFormat, 'Should include format description');
+    assert.strictEqual(result.bpFormat, '[file, line, enabled]', 'Should describe array format');
+    assert.ok(result.bp, 'Should have compact breakpoint info');
+    assert.ok(Array.isArray(result.bp), 'Compact format should be array');
+    assert.strictEqual(result.bp.length, 3, 'Should have [file, line, enabled]');
+    assert.ok(result.bp[0].endsWith('app.ts'), 'First element should be file');
+    assert.ok(typeof result.bp[1] === 'number', 'Second element should be line number');
+    assert.strictEqual(result.bp[2], true, 'Third element should be enabled status');
+  });
+
+  test('should validate input parameters', async () => {
+    // Test missing action
+    const result1 = await callTool('debug', {
+      format: 'detailed',
+    } as any);
+
+    console.log('Missing action result:', result1);
+    assert.ok(result1.error, 'Should have error for missing action');
+    assert.ok(
+      result1.error.includes('required') || result1.error.includes('action'),
+      'Should mention required parameter'
+    );
+
+    // Test invalid action
+    const result = await callTool('debug', {
+      action: 'invalidAction',
+      format: 'detailed',
+    });
+
+    console.log('Invalid action result:', result);
+    assert.ok(result.error, 'Should have error for invalid action');
+    assert.ok(
+      result.error.includes('Unknown') ||
+        result.error.includes('unknown') ||
+        result.error.includes('Invalid value') ||
+        result.error.includes('must be one of'),
+      'Should mention invalid/unknown action'
+    );
+  });
+
+  test('should handle multiple symbols with same name', async () => {
+    await openTestFile('math.ts');
+
+    // 'add' exists as both a function and a method
+    const result = await callTool('debug', {
+      action: 'setBreakpoint',
+      symbol: 'add',
+      format: 'detailed',
+    });
+
+    if (result.multipleMatches) {
+      assert.ok(Array.isArray(result.matches), 'Should provide matches array');
+      assert.ok(result.matches.length > 1, 'Should have multiple matches');
+
+      // Each match should have enough info to distinguish
+      result.matches.forEach((match: any) => {
+        assert.ok(match.symbol, 'Should have symbol info');
+        assert.ok(match.file, 'Should have file info');
+        assert.ok(match.kind, 'Should have kind (function/method)');
+        assert.ok(match.container || match.container === '', 'Should have container info');
+      });
+    } else {
+      // If it picked one, that's also acceptable
+      assert.ok(result.breakpoint, 'Should have set a breakpoint');
+    }
+  });
+
+  // Skip debug session tests for now as they require more setup
+  test.skip('should start debug session', async () => {
+    const result = await callTool('debug', {
+      action: 'start',
+      configuration: 'Debug TypeScript File',
+      format: 'detailed',
+    });
+
+    assert.ok(!result.error, 'Should not have error');
+    assert.ok(result.session, 'Should return session info');
+
+    // Clean up
+    await vscode.debug.stopDebugging();
   });
 });
