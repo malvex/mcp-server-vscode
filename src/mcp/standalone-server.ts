@@ -2,10 +2,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import * as http from 'http';
 
-// Since we're running standalone, we'll need to communicate with VS Code
-// through a different mechanism (e.g., WebSocket or HTTP API)
-// For MVP, we'll create a simplified version
+const VSCODE_BRIDGE_PORT = process.env.VSCODE_BRIDGE_PORT || '3000';
+const VSCODE_BRIDGE_URL = `http://localhost:${VSCODE_BRIDGE_PORT}`;
 
 const server = new Server(
   {
@@ -19,87 +19,121 @@ const server = new Server(
   }
 );
 
-// Tool definitions for standalone mode
-const tools = [
-  {
-    name: 'hover',
-    description: 'Get hover information at a specific position',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        uri: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
+// Helper function to make HTTP requests to VS Code bridge
+async function callVSCodeBridge(
+  endpoint: string,
+  method: string = 'GET',
+  body?: any
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'localhost',
+      port: parseInt(VSCODE_BRIDGE_PORT),
+      path: endpoint,
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
       },
-      required: ['uri', 'line', 'character'],
-    },
-  },
-  {
-    name: 'definition',
-    description: 'Find symbol definition',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        uri: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
-      },
-      required: ['uri', 'line', 'character'],
-    },
-  },
-  {
-    name: 'diagnostics',
-    description: 'Get diagnostics for a file or workspace',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        uri: { type: 'string' },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'references',
-    description: 'Find all references to a symbol',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        uri: { type: 'string' },
-        line: { type: 'number' },
-        character: { type: 'number' },
-      },
-      required: ['uri', 'line', 'character'],
-    },
-  },
-];
+    };
+
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          resolve(data);
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(
+        new Error(
+          `VS Code bridge not available. Make sure VS Code is running with the MCP extension and the server is started. Error: ${error.message}`
+        )
+      );
+    });
+
+    if (body) {
+      req.write(JSON.stringify(body));
+    }
+    req.end();
+  });
+}
 
 // Setup handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools };
+  try {
+    const response = await callVSCodeBridge('/tools');
+    return response;
+  } catch (error) {
+    console.error('Failed to get tools from VS Code:', error);
+    return {
+      tools: [],
+      error: error instanceof Error ? error.message : 'Failed to connect to VS Code',
+    };
+  }
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  // In standalone mode, we need to communicate with VS Code
-  // This would typically be done through:
-  // 1. VS Code extension API server
-  // 2. Language Server Protocol proxy
-  // 3. VS Code Remote Extension Host
+  try {
+    const response = await callVSCodeBridge('/tool', 'POST', {
+      tool: name,
+      args: args,
+    });
 
-  // For MVP, return a message about the architecture
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Tool '${name}' called with args: ${JSON.stringify(args, null, 2)}\n\nNote: This standalone server needs to be connected to a running VS Code instance with the extension active. Use the VS Code extension command 'Start MCP Server' to enable the connection.`,
-      },
-    ],
-  };
+    if (response.error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${response.error}`,
+          },
+        ],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response.result, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+    };
+  }
 });
 
 // Start the server
 async function main() {
+  // First check if VS Code bridge is available
+  try {
+    const health = await callVSCodeBridge('/health');
+    console.error(`Connected to VS Code bridge on port ${health.port}`);
+  } catch (error) {
+    console.error('Warning: VS Code bridge not available. Make sure to:');
+    console.error('1. Open VS Code with the MCP extension project');
+    console.error('2. Press F5 to launch the extension');
+    console.error('3. Run "Start MCP Server" command in the new VS Code window');
+    console.error('');
+    console.error(
+      "The MCP server will start anyway but tools won't work until VS Code is connected."
+    );
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('VS Code MCP Server started (stdio transport)');
