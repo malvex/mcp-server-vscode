@@ -7,8 +7,11 @@ import * as vscode from 'vscode';
  * with automatic retry logic for language server cold starts.
  */
 
-// Track which languages have been successfully queried
+// Track which languages have been successfully queried within this session
 const initializedLanguages = new Set<string>();
+
+// Track if we've done initial language server check in this session
+let hasCheckedLanguageServers = false;
 
 /**
  * Search for workspace symbols with cold start handling
@@ -21,8 +24,14 @@ export async function searchWorkspaceSymbols(
   query: string,
   maxRetries: number = 3
 ): Promise<vscode.SymbolInformation[]> {
-  // First attempt
-  let symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+  // Check if language servers are ready on first call
+  if (!hasCheckedLanguageServers && maxRetries > 0) {
+    await ensureLanguageServersReady();
+    hasCheckedLanguageServers = true;
+  }
+
+  // Now search for the specific symbol
+  const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
     'vscode.executeWorkspaceSymbolProvider',
     query
   );
@@ -30,34 +39,11 @@ export async function searchWorkspaceSymbols(
   // If we get results, mark languages as initialized
   if (symbols && symbols.length > 0) {
     for (const symbol of symbols) {
-      const document = await vscode.workspace.openTextDocument(symbol.location.uri);
-      initializedLanguages.add(document.languageId);
-    }
-    return symbols;
-  }
-
-  // If no results and this is a common query pattern, try with cold start handling
-  if (!symbols || symbols.length === 0) {
-    // Only retry if we haven't initialized any language yet
-    if (initializedLanguages.size === 0 && maxRetries > 0) {
-      const retryDelays = [1000, 3000, 10000]; // Progressive delays
-
-      for (let retry = 0; retry < Math.min(maxRetries, retryDelays.length); retry++) {
-        await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
-
-        symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
-          'vscode.executeWorkspaceSymbolProvider',
-          query
-        );
-
-        if (symbols && symbols.length > 0) {
-          // Mark languages as initialized
-          for (const symbol of symbols) {
-            const document = await vscode.workspace.openTextDocument(symbol.location.uri);
-            initializedLanguages.add(document.languageId);
-          }
-          return symbols;
-        }
+      try {
+        const document = await vscode.workspace.openTextDocument(symbol.location.uri);
+        initializedLanguages.add(document.languageId);
+      } catch (error) {
+        // Skip if can't open document
       }
     }
   }
@@ -132,6 +118,7 @@ export async function getDocumentSymbols(
  */
 export function resetInitializedLanguages(): void {
   initializedLanguages.clear();
+  hasCheckedLanguageServers = false;
 }
 
 /**
@@ -139,4 +126,58 @@ export function resetInitializedLanguages(): void {
  */
 export function isLanguageInitialized(languageId: string): boolean {
   return initializedLanguages.has(languageId);
+}
+
+/**
+ * Ensure language servers are ready by searching for common symbols
+ * This triggers language server initialization if needed
+ */
+async function ensureLanguageServersReady(): Promise<void> {
+  // Try to find any symbols to trigger language server initialization
+  // Using empty string or common patterns to get some results
+  const commonQueries = ['', 'constructor', 'main', 'init', 'test', 'class', 'function'];
+  const retryDelays = [1000, 3000, 10000]; // Progressive delays
+
+  for (const searchQuery of commonQueries) {
+    let symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+      'vscode.executeWorkspaceSymbolProvider',
+      searchQuery
+    );
+
+    // If we got any results, language servers are ready
+    if (symbols && symbols.length > 0) {
+      for (const symbol of symbols) {
+        try {
+          const document = await vscode.workspace.openTextDocument(symbol.location.uri);
+          initializedLanguages.add(document.languageId);
+        } catch (error) {
+          // Skip if can't open document
+        }
+      }
+      return; // Language servers are ready
+    }
+  }
+
+  // If no results from common queries, retry with delays
+  for (let retry = 0; retry < retryDelays.length; retry++) {
+    await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
+
+    // Try with empty string to get all symbols
+    const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+      'vscode.executeWorkspaceSymbolProvider',
+      ''
+    );
+
+    if (symbols && symbols.length > 0) {
+      for (const symbol of symbols) {
+        try {
+          const document = await vscode.workspace.openTextDocument(symbol.location.uri);
+          initializedLanguages.add(document.languageId);
+        } catch (error) {
+          // Skip if can't open document
+        }
+      }
+      return; // Language servers are ready
+    }
+  }
 }
