@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { HTTPBridge } from '../../mcp/http-bridge';
+import { setRetryDelays } from '../../tools/utils/symbolProvider';
 
 export interface TestContext {
   httpBridge: HTTPBridge;
@@ -10,6 +11,9 @@ export interface TestContext {
  * Sets up the test environment with HTTP bridge
  */
 export async function setupTest(): Promise<TestContext> {
+  // Use much faster retry delays for tests
+  setRetryDelays([100, 200, 500]); // Total: 800ms vs 14000ms
+
   // Start HTTP bridge on a test port
   const httpBridge = new HTTPBridge(3001); // Different port for tests
   await httpBridge.start();

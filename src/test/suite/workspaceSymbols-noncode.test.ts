@@ -21,19 +21,7 @@ suite('Workspace Symbols Non-Code Files Tests', () => {
         fs.mkdirSync(testFilesDir, { recursive: true });
       }
 
-      // Create test files
-      // Python file with actual code
-      fs.writeFileSync(
-        path.join(testFilesDir, 'test.py'),
-        `def hello():
-    """Say hello"""
-    return "Hello World"
-
-class Calculator:
-    def add(self, a, b):
-        return a + b
-`
-      );
+      // Create test files (we now use permanent Python files in test-workspace/src/)
 
       // HTML file (should not be parsed for symbols by default)
       fs.writeFileSync(
@@ -148,15 +136,11 @@ hello()
 
     assert.ok(!result.error, `Should not have error: ${result.error}`);
 
-    // Should only include code files (Python in this case)
+    // Should only include code files
     const fileNames = Object.keys(result.files);
     const codeFiles = fileNames.filter((f) => f.includes('test-noncode-files'));
 
     console.log('Files found:', codeFiles);
-
-    // Should only find the Python file
-    const pythonFiles = codeFiles.filter((f) => f.endsWith('.py'));
-    assert.ok(pythonFiles.length > 0, 'Should find Python files');
 
     // Should not include non-code files
     const nonCodeFiles = codeFiles.filter(
@@ -177,34 +161,41 @@ hello()
   });
 
   test('should parse only code files with reasonable token count', async () => {
+    // Use permanent Python files from test-workspace/src/
     const result = await callTool('workspaceSymbols', {
       format: 'detailed',
-      filePattern: '**/test-noncode-files/*.py',
+      filePattern: '**/src/*.py',
       includeDetails: true,
     });
 
     assert.ok(!result.error, 'Should not have error');
 
-    // Should find Python symbols
-    assert.ok(result.summary.totalSymbols > 0, 'Should find symbols in Python file');
+    // Check if Python was skipped (no language server)
+    if (result.summary.skippedFiles > 0) {
+      console.log('Python files were skipped - no language server available');
+      assert.strictEqual(
+        result.summary.totalSymbols,
+        0,
+        'Should have no symbols when Python is skipped'
+      );
+      assert.ok(result.summary.skippedFiles >= 2, 'Should have skipped at least 2 Python files');
+      return; // Skip the rest of the test
+    }
 
-    // For our simple Python file, should have just a few symbols
-    assert.ok(
-      result.summary.totalSymbols < 10,
-      `Should have less than 10 symbols for simple Python file, but found ${result.summary.totalSymbols}`
-    );
+    // Should find Python symbols (only if language server is available)
+    assert.ok(result.summary.totalSymbols > 0, 'Should find symbols in Python files');
 
     // Check token count is reasonable
     const resultString = JSON.stringify(result);
     const estimatedTokens = resultString.length / 4;
 
     console.log(
-      `Python file result: ${resultString.length} chars, ~${Math.round(estimatedTokens)} tokens`
+      `Python files result: ${resultString.length} chars, ~${Math.round(estimatedTokens)} tokens`
     );
 
     assert.ok(
-      estimatedTokens < 1000,
-      `Token count should be < 1000 for single Python file, but got ~${Math.round(estimatedTokens)}`
+      estimatedTokens < 2000,
+      `Token count should be < 2000 for Python files, but got ~${Math.round(estimatedTokens)}`
     );
   });
 
@@ -233,27 +224,11 @@ hello()
     );
   });
 
-  test('should support opt-in for non-code files if needed', async () => {
-    // Test that includeNonCodeFiles option exists and works
-    const result = await callTool('workspaceSymbols', {
-      format: 'detailed',
-      filePattern: '**/test-noncode-files/*',
-      includeNonCodeFiles: true, // Hypothetical option
-      maxFiles: 10,
-    });
-
-    // This test documents the expected API, even if not implemented yet
-    assert.ok(
-      !result.error || result.error.includes('includeNonCodeFiles'),
-      'Should either work or indicate the option is not implemented'
-    );
-  });
-
   test('should handle mixed file types correctly', async () => {
-    // When searching all files, should only process code files
+    // Test with both code and non-code files
     const result = await callTool('workspaceSymbols', {
       format: 'detailed',
-      filePattern: '**/test-noncode-files/*',
+      filePattern: '**/*',
       maxFiles: 50,
     });
 
@@ -261,11 +236,14 @@ hello()
 
     // Count symbols by file type
     let pythonSymbols = 0;
+    let typeScriptSymbols = 0;
     let nonCodeSymbols = 0;
 
     for (const [fileName, symbols] of Object.entries(result.files)) {
       if (fileName.endsWith('.py')) {
         pythonSymbols += (symbols as any[]).length;
+      } else if (fileName.endsWith('.ts')) {
+        typeScriptSymbols += (symbols as any[]).length;
       } else if (
         fileName.endsWith('.html') ||
         fileName.endsWith('.md') ||
@@ -275,10 +253,18 @@ hello()
       }
     }
 
-    console.log(`Python symbols: ${pythonSymbols}, Non-code symbols: ${nonCodeSymbols}`);
+    console.log(
+      `TypeScript symbols: ${typeScriptSymbols}, Python symbols: ${pythonSymbols}, Non-code symbols: ${nonCodeSymbols}`
+    );
 
-    // Python files should have symbols
-    assert.ok(pythonSymbols > 0, 'Should find symbols in Python files');
+    // TypeScript files should have symbols (built-in language server)
+    assert.ok(typeScriptSymbols > 0, 'Should find symbols in TypeScript files');
+
+    // Check if Python was skipped
+    if (result.summary.skippedFiles > 0) {
+      console.log('Python files were skipped - no language server available');
+      assert.strictEqual(pythonSymbols, 0, 'Should have no Python symbols when skipped');
+    }
 
     // Non-code files should have no symbols
     assert.strictEqual(

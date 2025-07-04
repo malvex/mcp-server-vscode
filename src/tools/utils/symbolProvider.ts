@@ -13,6 +13,16 @@ const initializedLanguages = new Set<string>();
 // Track if we've done initial language server check in this session
 let hasCheckedLanguageServers = false;
 
+// Configurable retry delays - can be overridden for testing
+export let retryDelays = [1000, 3000, 10000]; // Default: progressive delays
+
+/**
+ * Set custom retry delays (useful for testing)
+ */
+export function setRetryDelays(delays: number[]): void {
+  retryDelays = delays;
+}
+
 /**
  * Search for workspace symbols with cold start handling
  *
@@ -38,8 +48,6 @@ export async function searchWorkspaceSymbols(
 
   // If no results and we haven't retried yet, the language server might still be initializing
   if ((!symbols || symbols.length === 0) && maxRetries > 0) {
-    const retryDelays = [1000, 3000, 10000]; // Progressive delays
-
     for (let retry = 0; retry < Math.min(maxRetries, retryDelays.length); retry++) {
       await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
 
@@ -104,8 +112,6 @@ export async function getDocumentSymbols(
 
     if (knownLanguages.includes(document.languageId)) {
       // Progressive retry with increasing delays
-      const retryDelays = [1000, 3000, 10000];
-
       for (let retry = 0; retry < retryDelays.length; retry++) {
         await new Promise((resolve) => setTimeout(resolve, retryDelays[retry]));
 
@@ -177,7 +183,6 @@ async function ensureLanguageServersReady(): Promise<void> {
   // Try to find any symbols to trigger language server initialization
   // Using empty string or common patterns to get some results
   const commonQueries = ['', 'constructor', 'main', 'init', 'test', 'class', 'function'];
-  const retryDelays = [1000, 3000, 10000]; // Progressive delays
 
   for (const searchQuery of commonQueries) {
     const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(

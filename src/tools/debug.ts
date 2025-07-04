@@ -94,6 +94,10 @@ export const debugTool: Tool = {
                   location: [match.location.uri.toString(), match.location.range.start.line],
                 }
               : { status: 'Breakpoint added', symbol, line: match.location.range.start.line };
+          } else {
+            return format === 'compact'
+              ? { error: 'not_found', symbol }
+              : { error: `Symbol '${symbol}' not found in available matches` };
           }
         } else if (uri && line !== undefined) {
           // Position-based approach (backward compatibility)
@@ -111,7 +115,9 @@ export const debugTool: Tool = {
 
       case 'removeBreakpoint':
         if (!uri || line === undefined) {
-          throw new Error('URI and line required for removing breakpoint');
+          return format === 'compact'
+            ? { error: 'missing_params' }
+            : { error: 'URI and line required for removing breakpoint' };
         }
         const bpUri = vscode.Uri.parse(uri);
         const allBreakpoints = vscode.debug.breakpoints;
@@ -156,7 +162,9 @@ export const debugTool: Tool = {
             };
 
       default:
-        throw new Error(`Unknown debug action: ${action}`);
+        return format === 'compact'
+          ? { error: 'unknown_action', action }
+          : { error: `Unknown debug action: ${action}` };
     }
   },
 };

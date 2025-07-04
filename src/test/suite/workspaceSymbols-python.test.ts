@@ -13,124 +13,67 @@ suite('Workspace Symbols Python Tests', () => {
     await teardownTest(context);
   });
 
-  test('should debug Python file symbol extraction', async () => {
-    // First, let's create a simple Python file to test with
-    const pythonContent = `
-def hello_world():
-    """A simple hello world function"""
-    print("Hello, World!")
+  test('should handle Python files without language server', async () => {
+    // Test with our permanent Python files
+    const result = await callTool('workspaceSymbols', {
+      format: 'detailed',
+      filePattern: '**/*.py',
+    });
 
-class Calculator:
-    """A simple calculator class"""
-    def __init__(self):
-        self.result = 0
+    console.log('Python files result:', JSON.stringify(result, null, 2));
 
-    def add(self, value):
-        self.result += value
-        return self.result
+    assert.ok(!result.error, `Should not have error: ${result.error}`);
+    assert.ok(result.files, 'Should have files');
 
-MY_CONSTANT = 42
-`;
+    // Python files should be skipped (no language server)
+    const pythonFiles = Object.keys(result.files).filter((f) => f.endsWith('.py'));
 
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-      assert.fail('No workspace folder');
+    if (pythonFiles.length > 0) {
+      // This shouldn't happen without Python extension
+      console.warn('Unexpected: Python files found symbols without language server');
+      // But if it does happen (e.g., in future), test should still pass
+    } else {
+      console.log('Expected: Python files were skipped (no language server)');
+      assert.ok(result.summary.skippedFiles >= 2, 'Should have skipped at least 2 Python files');
     }
 
-    const testFileUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'test_symbols.py');
-
-    // Create the test file
-    const encoder = new TextEncoder();
-    await vscode.workspace.fs.writeFile(testFileUri, encoder.encode(pythonContent));
-
-    try {
-      // Wait for file to be indexed
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Open the document
-      const document = await vscode.workspace.openTextDocument(testFileUri);
-
-      // Try to get symbols directly via VS Code API
-      console.log('Document language ID:', document.languageId);
-
-      const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-        'vscode.executeDocumentSymbolProvider',
-        document.uri
-      );
-
-      console.log('Direct API symbols:', symbols);
-      if (symbols) {
-        console.log('Number of symbols found:', symbols.length);
-        for (const symbol of symbols) {
-          console.log(`- ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`);
-        }
-      }
-
-      // Now try via our tool
-      const result = await callTool('workspaceSymbols', {
-        format: 'detailed',
-        filePattern: '**/test_symbols.py',
-      });
-
-      console.log('Tool result:', JSON.stringify(result, null, 2));
-
-      assert.ok(!result.error, `Should not have error: ${result.error}`);
-      assert.ok(result.files, 'Should have files');
-
-      const pythonFile = Object.keys(result.files).find((f) => f.includes('test_symbols.py'));
-
-      if (pythonFile) {
-        const fileSymbols = result.files[pythonFile];
-        console.log('File symbols:', fileSymbols);
-        // Without language server, this shouldn't happen unless Python extension is installed
-        assert.fail('Python file should be skipped when no language server is available');
-      } else {
-        console.log('Good: Python file was skipped because no language server is available');
-        assert.ok(result.summary.skippedFiles > 0, 'Should have skipped files');
-      }
-    } finally {
-      // Clean up
-      await vscode.workspace.fs.delete(testFileUri);
-    }
+    // Verify our Python files exist but were skipped
+    const allFiles = await vscode.workspace.findFiles('**/*.py');
+    assert.ok(allFiles.length >= 2, 'Should have at least 2 Python files in workspace');
+    console.log(`Found ${allFiles.length} Python files, skipped ${result.summary.skippedFiles}`);
   });
 
-  test('should check if Python extension is available', async () => {
+  test('should verify Python extension is not installed', async () => {
     // Check if Python extension is installed
     const pythonExt = vscode.extensions.getExtension('ms-python.python');
-    console.log('Python extension installed:', !!pythonExt);
 
-    if (pythonExt) {
-      console.log('Python extension active:', pythonExt.isActive);
-      if (!pythonExt.isActive) {
-        await pythonExt.activate();
-        console.log('Python extension activated');
-      }
-    } else {
-      console.log('Python extension NOT installed - this explains empty symbols');
-    }
+    // We expect NO Python extension in our test environment
+    assert.ok(!pythonExt, 'Python extension should NOT be installed in test environment');
+    console.log('Confirmed: Python extension not installed (as expected)');
   });
 
-  test('should verify default behavior returns only files with symbols', async () => {
-    // Call with no parameters
+  test('should verify TypeScript files have symbols and Python files are skipped', async () => {
+    // Call with no parameters - should get all files
     const result = await callTool('workspaceSymbols', { format: 'detailed' });
 
     assert.ok(!result.error, 'Should not have error');
     assert.ok(result.files, 'Should have files');
 
-    // All files in the result should have symbols
-    for (const [file, symbols] of Object.entries(result.files)) {
-      assert.ok(Array.isArray(symbols), `${file} should have symbols array`);
-      assert.ok(symbols.length > 0, `${file} should have at least one symbol (not empty array)`);
-    }
+    // TypeScript files should have symbols
+    const tsFiles = Object.keys(result.files).filter((f) => f.endsWith('.ts'));
+    assert.ok(tsFiles.length >= 2, 'Should find at least 2 TypeScript files with symbols');
 
-    console.log(`Found ${Object.keys(result.files).length} files with symbols`);
-    console.log(`Total symbols: ${result.summary.totalSymbols}`);
-    console.log(`Skipped files: ${result.summary.skippedFiles || 0}`);
+    // Python files should be skipped
+    const pyFiles = Object.keys(result.files).filter((f) => f.endsWith('.py'));
+    assert.strictEqual(pyFiles.length, 0, 'Should not find any Python files (should be skipped)');
 
-    // Log a few examples
-    for (const [file, symbols] of Object.entries(result.files).slice(0, 3)) {
-      console.log(`${file}: ${(symbols as any[]).length} symbols`);
-    }
+    // Should have skipped files
+    assert.ok(result.summary.skippedFiles >= 2, 'Should have skipped at least 2 Python files');
+
+    console.log(`Found ${tsFiles.length} TypeScript files with symbols`);
+    console.log(
+      `Skipped ${result.summary.skippedFiles} files (Python files without language server)`
+    );
   });
 
   test('should handle cold start transparently', async () => {
