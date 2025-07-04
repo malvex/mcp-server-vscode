@@ -1,6 +1,9 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import Mocha from 'mocha';
 import { glob } from 'glob';
+import { cleanupSharedContext } from '../helpers/sharedSetup';
+import { VSCodeReporter } from './mochaReporter';
 
 export function run(): Promise<void> {
   // Create the mocha test
@@ -8,6 +11,8 @@ export function run(): Promise<void> {
     ui: 'tdd',
     color: true,
     timeout: 60000, // 60 seconds for each test (VS Code operations can be slow)
+    parallel: false, // Run tests sequentially to avoid port conflicts
+    reporter: process.env.VSCODE_TEST_REPORTER === 'default' ? 'spec' : (VSCodeReporter as any),
   };
 
   // Check for grep pattern from environment variable
@@ -18,6 +23,9 @@ export function run(): Promise<void> {
   const mocha = new Mocha(mochaOptions);
 
   const testsRoot = path.resolve(__dirname, '.');
+
+  // Clean up before running tests
+  cleanupTestWorkspace();
 
   return new Promise((c, e) => {
     const pattern = '**/**.test.js';
@@ -30,7 +38,10 @@ export function run(): Promise<void> {
 
         try {
           // Run the mocha test
-          mocha.run((failures: number) => {
+          mocha.run(async (failures: number) => {
+            // Clean up shared context after all tests
+            await cleanupSharedContext();
+
             if (failures > 0) {
               e(new Error(`${failures} tests failed.`));
             } else {
@@ -46,4 +57,31 @@ export function run(): Promise<void> {
         e(err);
       });
   });
+}
+
+/**
+ * Clean up test workspace before running tests
+ */
+function cleanupTestWorkspace() {
+  // Clean up any leftover temp files from previous test runs
+  try {
+    const workspaceRoot = path.resolve(__dirname, '../../..');
+    const testWorkspace = path.join(workspaceRoot, 'test-workspace', 'src');
+
+    if (fs.existsSync(testWorkspace)) {
+      const files = fs.readdirSync(testWorkspace);
+      for (const file of files) {
+        if (file.match(/^temp-test-\d+.*\.(ts|js)$/)) {
+          try {
+            fs.unlinkSync(path.join(testWorkspace, file));
+            console.log(`Cleaned up leftover temp file: ${file}`);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore if test workspace doesn't exist
+  }
 }

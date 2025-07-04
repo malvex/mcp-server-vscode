@@ -1,43 +1,32 @@
 import * as vscode from 'vscode';
 import { HTTPBridge } from '../../mcp/http-bridge';
-import { setRetryDelays } from '../../tools/utils/symbolProvider';
+import { getSharedTestContext, getSharedPort } from './sharedSetup';
+import { openTestFileWithLanguageServer } from './languageServerReady';
+
+// Global to track the current test port
+let globalTestPort: number | undefined;
 
 export interface TestContext {
   httpBridge: HTTPBridge;
   workspaceUri: vscode.Uri;
+  port: number;
 }
 
 /**
  * Sets up the test environment with HTTP bridge
  */
 export async function setupTest(): Promise<TestContext> {
-  // Use much faster retry delays for tests
-  setRetryDelays([100, 200, 500]); // Total: 800ms vs 14000ms
-
-  // Start HTTP bridge on a test port
-  const httpBridge = new HTTPBridge(3001); // Different port for tests
-  await httpBridge.start();
-
-  // Get workspace URI
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders || workspaceFolders.length === 0) {
-    throw new Error('No workspace folder found');
-  }
-
-  // Wait for TypeScript extension to be ready
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
-  return {
-    httpBridge,
-    workspaceUri: workspaceFolders[0].uri,
-  };
+  const context = await getSharedTestContext();
+  globalTestPort = context.port;
+  return context;
 }
 
 /**
  * Tears down the test environment
  */
-export async function teardownTest(context: TestContext): Promise<void> {
-  await context.httpBridge.stop();
+export async function teardownTest(_context: TestContext): Promise<void> {
+  // Shared context cleanup is handled globally
+  globalTestPort = undefined;
 }
 
 /**
@@ -57,19 +46,14 @@ export function getTestFileUri(filename: string): vscode.Uri {
  */
 export async function openTestFile(filename: string): Promise<vscode.TextDocument> {
   const uri = getTestFileUri(filename);
-  const document = await vscode.workspace.openTextDocument(uri);
-  await vscode.window.showTextDocument(document);
-
-  // Wait for language server to process the file
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  return document;
+  return openTestFileWithLanguageServer(uri);
 }
 
 /**
  * Makes an HTTP request to the bridge to call a tool
  */
-export async function callTool(toolName: string, args: any, port: number = 3001): Promise<any> {
+export async function callTool(toolName: string, args: any, context?: TestContext): Promise<any> {
+  const port = context?.port || globalTestPort || getSharedPort() || 3001;
   const http = await import('http');
 
   return new Promise((resolve, reject) => {
@@ -100,8 +84,8 @@ export async function callTool(toolName: string, args: any, port: number = 3001)
           if (res.statusCode !== 200) {
             try {
               const errorData = JSON.parse(responseData);
-              // For 400 errors (validation), return the error as a result
-              if (res.statusCode === 400) {
+              // For 400/404 errors, return the error as a result
+              if (res.statusCode === 400 || res.statusCode === 404) {
                 resolve({ error: errorData.error });
                 return;
               }

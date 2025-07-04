@@ -24,6 +24,9 @@ suite('Hover Tool Tests', () => {
   });
 
   test('should return type information for add function', async () => {
+    // Ensure file is open for this test
+    await openTestFile('math.ts');
+
     // Use AI-friendly symbol-based approach
     const result = await callTool('hover', {
       format: 'detailed',
@@ -34,17 +37,22 @@ suite('Hover Tool Tests', () => {
 
     assert.ok(!result.error, `Should not have error: ${result.error}`);
 
-    // Check if it's the "no hover information available" case
-    if (result.message) {
-      console.log('No hover message:', result.message);
-      // This can happen if the language server hasn't indexed yet
-      return;
+    // Handle both single and multiple match cases
+    let hoverInfo;
+    if (result.multipleMatches && result.matches) {
+      // Find the add function from math.ts (not from temp files)
+      const mathMatch = result.matches.find(
+        (m: any) => m.symbol.file.includes('math.ts') && !m.symbol.file.includes('temp-test')
+      );
+      assert.ok(mathMatch, 'Should find add function from math.ts');
+      hoverInfo = mathMatch.hover;
+    } else {
+      assert.ok(result.hover, 'Should return hover information');
+      hoverInfo = result.hover;
     }
 
-    assert.ok(result.hover, 'Should return hover information');
-    assert.ok(result.hover.contents, 'Should have contents');
-
-    const content = result.hover.contents.join(' ');
+    assert.ok(hoverInfo.contents, 'Should have contents');
+    const content = hoverInfo.contents.join(' ');
     // Should show function signature with parameter types
     assert.ok(content.includes('number'), 'Should show parameter types');
     assert.ok(content.includes('add'), 'Should include function name');
@@ -58,16 +66,21 @@ suite('Hover Tool Tests', () => {
 
     assert.ok(!result.error, 'Should not have error');
 
-    // Check if it's the "no hover information available" case
-    if (result.message) {
-      console.log('No hover message:', result.message);
-      // This can happen if the language server hasn't indexed yet
-      return;
+    // Handle both single and multiple match cases
+    let hoverInfo;
+    if (result.multipleMatches && result.matches) {
+      // Find the add function from math.ts (not from temp files)
+      const mathMatch = result.matches.find(
+        (m: any) => m.symbol.file.includes('math.ts') && !m.symbol.file.includes('temp-test')
+      );
+      assert.ok(mathMatch, 'Should find add function from math.ts');
+      hoverInfo = mathMatch.hover;
+    } else {
+      assert.ok(result.hover, 'Should return hover information');
+      hoverInfo = result.hover;
     }
 
-    assert.ok(result.hover, 'Should return hover information');
-    const content = result.hover.contents.join(' ');
-
+    const content = hoverInfo.contents.join(' ');
     // Check for JSDoc content
     assert.ok(
       content.includes('Adds two numbers') || content.includes('sum of a and b'),
@@ -83,17 +96,22 @@ suite('Hover Tool Tests', () => {
 
     assert.ok(!result.error, 'Should not have error');
 
-    // Check if it's the "no hover information available" case
-    if (result.message) {
-      console.log('No hover message:', result.message);
-      // This can happen if the language server hasn't indexed yet
-      return;
+    // Handle both single and multiple match cases
+    let hoverInfo;
+    if (result.multipleMatches && result.matches) {
+      // Find the Calculator class from math.ts (not from temp files)
+      const mathMatch = result.matches.find(
+        (m: any) => m.symbol.file.includes('math.ts') && !m.symbol.file.includes('temp-test')
+      );
+      assert.ok(mathMatch, 'Should find Calculator class from math.ts');
+      hoverInfo = mathMatch.hover;
+    } else {
+      assert.ok(result.hover, 'Should return hover information');
+      hoverInfo = result.hover;
     }
 
-    assert.ok(result.hover, 'Should return hover information');
-    assert.ok(result.hover.contents, 'Should have contents');
-
-    const content = result.hover.contents.join(' ');
+    assert.ok(hoverInfo.contents, 'Should have contents');
+    const content = hoverInfo.contents.join(' ');
     assert.ok(content.includes('Calculator'), 'Should include class name');
     assert.ok(content.includes('class'), 'Should indicate it is a class');
   });

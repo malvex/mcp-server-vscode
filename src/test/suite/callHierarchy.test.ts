@@ -1,22 +1,20 @@
 import * as assert from 'assert';
+import * as vscode from 'vscode';
 import {
   setupTest,
   teardownTest,
   openTestFile,
   callTool,
   TestContext,
+  getTestFileUri,
 } from '../helpers/testHelpers';
+import { waitForLanguageServer } from '../helpers/languageServerReady';
 
 suite('Call Hierarchy Tool Tests', () => {
   let context: TestContext;
 
   suiteSetup(async () => {
     context = await setupTest();
-    // Open both test files to ensure they're indexed
-    await openTestFile('math.ts');
-    await openTestFile('app.ts');
-    // Give extra time for language server to index
-    await new Promise((resolve) => setTimeout(resolve, 3000));
   });
 
   suiteTeardown(async () => {
@@ -27,31 +25,61 @@ suite('Call Hierarchy Tool Tests', () => {
     await openTestFile('math.ts');
 
     // Use AI-friendly symbol-based approach
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'add',
-      direction: 'incoming',
-    });
-
-    assert.ok(!result.error, `Should not have error: ${result.error}`);
-
-    // Check if it's the "no hierarchy available" case
-    if (result.message) {
-      // This can happen if the language server hasn't indexed yet
-      // But let's be more strict in testing - retry once
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const retryResult = await callTool('callHierarchy', {
+    let result = await callTool(
+      'callHierarchy',
+      {
         format: 'detailed',
         symbol: 'add',
         direction: 'incoming',
-      });
+      },
+      context
+    );
+
+    assert.ok(!result.error, `Should not have error: ${result.error}`);
+
+    // Handle multiple matches case
+    if (result.multipleMatches && result.matches) {
+      // Find the add function from math.ts (not from temp files)
+      const mathMatch = result.matches.find(
+        (m: any) => m.symbol.file.includes('math.ts') && !m.symbol.file.includes('temp-test')
+      );
+      assert.ok(mathMatch, 'Should find add function from math.ts');
+
+      // Use the hierarchy from the math.ts match
+      if (mathMatch.calls) {
+        result = mathMatch;
+      } else {
+        // If no calls in the match, might need to handle "no hierarchy available"
+        result = { message: 'no call hierarchy available' };
+      }
+    }
+
+    // Check if it's the "no hierarchy available" case
+    if (result.message && result.message.includes('no call hierarchy available')) {
+      // Language server might not be ready yet - retry with proper wait
+      const doc = await vscode.workspace.openTextDocument(getTestFileUri('math.ts'));
+      const ready = await waitForLanguageServer(doc);
+
+      if (!ready) {
+        assert.fail('Language server should be ready for call hierarchy');
+      }
+
+      const retryResult = await callTool(
+        'callHierarchy',
+        {
+          format: 'detailed',
+          symbol: 'add',
+          direction: 'incoming',
+        },
+        context
+      );
 
       if (retryResult.message) {
         assert.fail('Call hierarchy should be available after retry');
       }
 
       // Use retry result for remaining assertions
-      Object.assign(result, retryResult);
+      result = retryResult;
     }
 
     assert.ok(result.calls, 'Should return calls');
@@ -75,11 +103,15 @@ suite('Call Hierarchy Tool Tests', () => {
   test('should find outgoing calls from calculateSum function', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'calculateSum',
-      direction: 'outgoing',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'calculateSum',
+        direction: 'outgoing',
+      },
+      context
+    );
 
     assert.ok(!result.error, 'Should not have error');
     assert.ok(result.calls, 'Should return calls');
@@ -96,11 +128,15 @@ suite('Call Hierarchy Tool Tests', () => {
   test('should find incoming calls to Calculator class methods', async () => {
     await openTestFile('math.ts');
 
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'Calculator.multiply',
-      direction: 'incoming',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'Calculator.multiply',
+        direction: 'incoming',
+      },
+      context
+    );
 
     assert.ok(!result.error, `Should not have error: ${result.error}`);
 
@@ -119,29 +155,50 @@ suite('Call Hierarchy Tool Tests', () => {
 
   test('should handle ambiguous symbol names correctly', async () => {
     // Test that when searching for 'add', we get the function not the method
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'add',
-      direction: 'incoming',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'add',
+        direction: 'incoming',
+      },
+      context
+    );
 
     assert.ok(!result.error, 'Should not have error');
 
-    if (result.symbol) {
+    // Handle multiple matches case
+    let symbolToCheck;
+    if (result.multipleMatches && result.matches) {
+      // Find the add function from math.ts (not from temp files)
+      const mathMatch = result.matches.find(
+        (m: any) => m.symbol.file.includes('math.ts') && !m.symbol.file.includes('temp-test')
+      );
+      assert.ok(mathMatch, 'Should find add function from math.ts');
+      symbolToCheck = mathMatch.symbol;
+    } else if (result.symbol) {
+      symbolToCheck = result.symbol;
+    }
+
+    if (symbolToCheck) {
       // Verify we got the standalone function
-      assert.ok(!result.symbol.container, 'Should prioritize standalone function over method');
-      assert.strictEqual(result.symbol.kind, 'Function', 'Should identify as function');
+      assert.ok(!symbolToCheck.container, 'Should prioritize standalone function over method');
+      assert.strictEqual(symbolToCheck.kind, 'Function', 'Should identify as function');
     }
   });
 
   test('should include call location information', async () => {
     await openTestFile('math.ts');
 
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'add',
-      direction: 'incoming',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'add',
+        direction: 'incoming',
+      },
+      context
+    );
 
     assert.ok(!result.error, 'Should not have error');
 
@@ -170,11 +227,15 @@ suite('Call Hierarchy Tool Tests', () => {
   });
 
   test('should handle symbol not found', async () => {
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'nonExistentFunction',
-      direction: 'incoming',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'nonExistentFunction',
+        direction: 'incoming',
+      },
+      context
+    );
 
     assert.ok(result.error, 'Should return error for non-existent symbol');
     assert.ok(result.error.includes('No symbol found'), 'Error should mention symbol not found');
@@ -188,11 +249,15 @@ suite('Call Hierarchy Tool Tests', () => {
   test('should find both incoming and outgoing calls', async () => {
     await openTestFile('app.ts');
 
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'calculateSum',
-      direction: 'both',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'calculateSum',
+        direction: 'both',
+      },
+      context
+    );
 
     assert.ok(!result.error, 'Should not have error');
     assert.ok(result.calls, 'Should return calls');
@@ -213,11 +278,15 @@ suite('Call Hierarchy Tool Tests', () => {
   });
 
   test('should work with class method notation', async () => {
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'Calculator.add',
-      direction: 'incoming',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'Calculator.add',
+        direction: 'incoming',
+      },
+      context
+    );
 
     assert.ok(!result.error, 'Should not have error');
 
@@ -238,11 +307,15 @@ suite('Call Hierarchy Tool Tests', () => {
   });
 
   test('should provide helpful error messages with suggestions', async () => {
-    const result = await callTool('callHierarchy', {
-      format: 'detailed',
-      symbol: 'calc', // Partial name
-      direction: 'incoming',
-    });
+    const result = await callTool(
+      'callHierarchy',
+      {
+        format: 'detailed',
+        symbol: 'calc', // Partial name
+        direction: 'incoming',
+      },
+      context
+    );
 
     if (result.error) {
       // Should either find partial match or provide suggestions

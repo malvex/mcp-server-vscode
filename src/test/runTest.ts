@@ -23,10 +23,25 @@ async function main() {
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: [testWorkspace, '--disable-extensions'],
+      launchArgs: [
+        testWorkspace,
+        '--disable-extensions',
+        '--disable-gpu',
+        '--no-sandbox',
+        '--disable-updates',
+        '--skip-welcome',
+        '--skip-release-notes',
+        '--disable-workspace-trust',
+        '--disable-telemetry',
+        '--disable-crash-reporter',
+        '--user-data-dir=/tmp/vscode-test-profile',
+      ],
       extensionTestsEnv: {
         ...process.env,
         MOCHA_GREP: process.env.MOCHA_GREP,
+        // Disable telemetry and other features that might slow down tests
+        VSCODE_SKIP_PRELAUNCH: '1',
+        ELECTRON_NO_ATTACH_CONSOLE: '1',
       },
     });
   } catch {

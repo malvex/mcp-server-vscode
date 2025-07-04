@@ -58,12 +58,14 @@ suite('Definition Tool Tests', () => {
     });
 
     assert.ok(result.definitions, 'Should return definitions');
-    assert.strictEqual(result.definitions.length, 1, 'Should find one definition');
+    assert.ok(result.definitions.length >= 1, 'Should find at least one definition');
 
-    const def = result.definitions[0];
-    assert.ok(def.uri.endsWith('math.ts'), 'Should point to math.ts file');
+    // Filter for the definition in math.ts (ignore temp test files)
+    const mathDef = result.definitions.find((def: any) => def.uri.endsWith('math.ts'));
+    assert.ok(mathDef, 'Should find Calculator definition in math.ts');
+
     assert.strictEqual(
-      def.range.start.line,
+      mathDef.range.start.line,
       20,
       'Should point to Calculator class definition (0-based)'
     );
