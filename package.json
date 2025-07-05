@@ -1,8 +1,30 @@
 {
-  "name": "vscode-mcp-server",
-  "displayName": "VS Code MCP Server",
-  "description": "MCP server providing VS Code language intelligence and debugging capabilities",
-  "version": "0.0.1",
+  "name": "mcp-server-vscode",
+  "displayName": "MCP Server for VS Code",
+  "description": "VS Code extension that provides an MCP server for AI assistants to interact with your development environment",
+  "version": "0.1.0",
+  "publisher": "your-publisher-id",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/malvex/mcp-server-vscode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/malvex/mcp-server-vscode/issues"
+  },
+  "homepage": "https://github.com/malvex/mcp-server-vscode#readme",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "vscode",
+    "language-server",
+    "debugging",
+    "ai-assistant",
+    "claude",
+    "claude-desktop",
+    "claude-code",
+    "anthropic"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -40,26 +62,25 @@
     }
   },
   "bin": {
-    "vscode-mcp-server": "./out/mcp/standalone-server.js"
+    "mcp-server-vscode": "./out/mcp/standalone-server.js"
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "clean": "rm -rf out",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "prepare": "npm run compile",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "test:ci": "npm test",
-    "test:unit": "VSCODE_TEST_REPORTER=vscode node ./out/test/runTest.js",
-    "test:watch": "npm run compile && npm run test:unit -- --watch",
+    "package": "vsce package",
     "start:mcp": "node ./out/mcp/standalone-server.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "^22.10.0",
-    "@types/mocha": "^10.0.6",
     "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "@vscode/test-electron": "^2.4.1",

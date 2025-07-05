@@ -1,0 +1,166 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this bug! Please fill out the information below to help us understand and fix the issue.
+
+  - type: dropdown
+    id: bug-type
+    attributes:
+      label: Bug Type
+      description: What type of issue are you experiencing?
+      options:
+        - Language Intelligence Tools (hover, definition, references, etc.)
+        - Debug Tools (breakpoints, stepping, variables, etc.)
+        - Refactoring Tools (rename)
+        - Connection/Server Issues
+        - Performance Issues
+        - Installation/Setup Issues
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - macOS (Intel)
+        - macOS (Apple Silicon)
+        - Windows 11
+        - Windows 10
+        - Ubuntu/Debian
+        - Other Linux
+        - WSL
+    validations:
+      required: true
+
+  - type: dropdown
+    id: vscode-version
+    attributes:
+      label: VS Code Version
+      description: What version of VS Code are you using? (Help > About)
+      options:
+        - Latest Stable
+        - Previous Stable
+        - Insiders
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ai-tool
+    attributes:
+      label: AI Assistant
+      description: Which AI assistant are you using?
+      options:
+        - Claude Desktop
+        - Claude Code (CLI)
+        - Other MCP Client
+        - Not Applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: |
+        When I try to use the hover tool on a TypeScript function, it returns an error instead of showing type information...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Open a TypeScript project in VS Code
+        2. Start the MCP server
+        3. Ask Claude to "show me what the processData function does"
+        4. The hover tool returns an error...
+      value: |
+        1.
+        2.
+        3.
+        4.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: The hover tool should return type information and documentation for the function
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: The tool returned an error message saying "Symbol not found"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: Please paste any relevant error messages or logs
+      render: shell
+      placeholder: |
+        Paste error messages here...
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Programming Language
+      description: What language were you working with when the issue occurred?
+      options:
+        - TypeScript
+        - JavaScript
+        - Python
+        - Java
+        - C#
+        - Go
+        - Rust
+        - Other
+        - Not Applicable
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension Version
+      description: What version of the MCP Server for VS Code extension? (Check Extensions panel)
+      placeholder: '0.1.0'
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, configuration, etc.)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to make sure this hasn't been reported before
+          required: true
+        - label: I have included all relevant information above
+          required: true
+        - label: I am using the latest version of the extension
+          required: false

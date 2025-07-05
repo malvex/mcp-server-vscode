@@ -1,0 +1,106 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: '[Feature]: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible.
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature are you requesting?
+      options:
+        - New MCP Tool
+        - Enhancement to Existing Tool
+        - New Language Support
+        - Performance Improvement
+        - UI/UX Improvement
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tool-category
+    attributes:
+      label: Tool Category
+      description: Which category of tools does this relate to?
+      options:
+        - Language Intelligence (hover, definition, etc.)
+        - Debugging (breakpoints, stepping, etc.)
+        - Refactoring
+        - New Category
+        - Not Applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Currently, when I want to find all implementations of an interface, I have to manually search through files...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this to work?
+      placeholder: |
+        Add a new tool called `findImplementations` that takes an interface name and returns all classes that implement it...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case Example
+      description: Show how this would be used with an AI assistant
+      placeholder: |
+        User: "Find all classes that implement the PaymentProcessor interface"
+        AI uses: findImplementations({ symbol: "PaymentProcessor" })
+        Result: Returns list of implementing classes with their locations
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other solutions have you considered?
+      placeholder: |
+        I tried using the references tool, but it also includes usage sites, not just implementations...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical - Blocking my work
+        - High - Would significantly improve my workflow
+        - Medium - Nice to have
+        - Low - Minor improvement
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be willing to help?
+      options:
+        - label: I would like to implement this feature
+        - label: I can help test this feature
+        - label: I can help document this feature
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
