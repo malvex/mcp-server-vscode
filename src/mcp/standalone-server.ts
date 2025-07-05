@@ -12,7 +12,7 @@ const VSCODE_BRIDGE_PORT = process.env.VSCODE_BRIDGE_PORT || '8991';
 const server = new Server(
   {
     name: 'vscode-mcp-server',
-    version: '0.0.1',
+    version: '0.1.0',
   },
   {
     capabilities: {
