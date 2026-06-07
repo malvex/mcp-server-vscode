@@ -86,8 +86,9 @@ export function activate(context: vscode.ExtensionContext) {
     mcpServerStatusBar
   );
 
-  // Auto-start server on activation
-  // vscode.commands.executeCommand('vscode-mcp.startServer');
+  if (vscode.workspace.getConfiguration('vscode-mcp').get<boolean>('autoStart', false)) {
+    vscode.commands.executeCommand('vscode-mcp.startServer');
+  }
 }
 
 export function deactivate() {

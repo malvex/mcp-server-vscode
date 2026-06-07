@@ -57,6 +57,11 @@
           "type": "number",
           "default": 8991,
           "description": "Port for the MCP server"
+        },
+        "vscode-mcp.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start the MCP server automatically when VS Code starts, without clicking the status bar"
         }
       }
     }
