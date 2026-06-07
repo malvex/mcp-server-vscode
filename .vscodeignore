@@ -10,7 +10,7 @@ test-workspace/**
 .prettierrc
 .pre-commit-config.yaml
 tsconfig.json
-node_modules/**
+# Do not ignore node_modules: there is no bundler, so the standalone MCP
+# server needs @modelcontextprotocol/sdk shipped. vsce only packs prod deps.
 **/*.ts
-!**/*.d.ts
 .yarnrc
