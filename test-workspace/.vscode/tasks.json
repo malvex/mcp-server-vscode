@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "prelaunch-noop",
+      "type": "shell",
+      "command": "node",
+      "args": ["-e", "process.exit(0)"],
+      "presentation": {
+        "reveal": "never"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

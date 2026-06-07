@@ -298,6 +298,22 @@ suite('Debug Tools Tests', () => {
     }
   });
 
+  test('should start debug session with a preLaunchTask', async () => {
+    const result = await callTool('debug_startSession', {
+      configuration: 'Debug With PreLaunchTask',
+      format: 'detailed',
+    });
+
+    // A preLaunchTask only resolves when startDebugging is given the
+    // owning workspace folder. Without it, VS Code reports
+    // "Could not find the task 'prelaunch-noop'" and startDebugging
+    // returns false.
+    assert.ok(!result.error, `Should not have error: ${result.error}`);
+    assert.strictEqual(result.success, true, 'Debug session should start');
+
+    await vscode.debug.stopDebugging();
+  });
+
   // Skip debug session tests for now as they require more setup
   test.skip('should start debug session', async () => {
     const result = await callTool('debug_startSession', {
