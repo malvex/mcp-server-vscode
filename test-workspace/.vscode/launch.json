@@ -20,6 +20,15 @@
       "args": ["--timeout", "999999", "--colors", "${file}"],
       "internalConsoleOptions": "openOnSessionStart",
       "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug With PreLaunchTask",
+      "program": "${workspaceFolder}/src/noop.cjs",
+      "preLaunchTask": "prelaunch-noop",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

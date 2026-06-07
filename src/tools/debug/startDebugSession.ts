@@ -24,7 +24,14 @@ export const debug_startSessionTool: Tool = {
   handler: async (args) => {
     const { configuration, format = 'compact' } = args;
 
-    const configs = vscode.workspace.getConfiguration('launch').get<any[]>('configurations') || [];
+    // Single-root only: a multi-root workspace can host per-folder launch
+    // configs and tasks, which this does not resolve.
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+
+    const configs =
+      vscode.workspace
+        .getConfiguration('launch', workspaceFolder?.uri)
+        .get<any[]>('configurations') || [];
 
     if (configs.length === 0) {
       return format === 'compact'
@@ -46,7 +53,9 @@ export const debug_startSessionTool: Tool = {
       configToUse = found;
     }
 
-    const success = await vscode.debug.startDebugging(undefined, configToUse);
+    // The workspace folder must be passed so VS Code can resolve a
+    // preLaunchTask and folder-scoped variables like ${workspaceFolder}.
+    const success = await vscode.debug.startDebugging(workspaceFolder, configToUse);
 
     if (format === 'compact') {
       return { started: success, config: configToUse.name };
